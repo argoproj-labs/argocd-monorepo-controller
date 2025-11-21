@@ -11,11 +11,6 @@ that actually changed the application (Change Revision). It is usefull
 when several Applications are looking at different paths at the same
 repository/branch (monorepos).
 
-## Documentation
-
-Please see [Proposal](https://github.com/argoproj-labs/argocd-monorepo-controller/blob/main/docs/monorepo_controller_proposal.md) for project motivation, architecture and
-description the program functionality.
-
 ## What is its development status?
 
 This is a newly created Argoproj-Labs project. It is WIP and still is

@@ -16,12 +16,6 @@ repository/branch (monorepos).
     You are welcome to test it out on non-critical environments, and of
     course to contribute.
 
-## Documentation
-
-Please see [Proposal](https://github.com/argoproj-labs/argocd-monorepo-controller/blob/main/docs/monorepo_controller_proposal.md) for project motivation, architecture and
-description the program functionality.
-
-
 ## Installation
 
 The controller should be installed into the namespace of an
