@@ -58,37 +58,51 @@ checksum:
 release:
   prerelease: auto
   draft: false
+  # header: |
+  #   ## Quick Start
+
+  #   ### Non-HA:
+
+  #   ```shell
+  #   kubectl create namespace argocd
+  #   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/{{.Tag}}/manifests/install.yaml
+  #   ```
+
+  #   ### HA:
+
+  #   ```shell
+  #   kubectl create namespace argocd
+  #   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/{{.Tag}}/manifests/ha/install.yaml
+  #   ```
+
+  #   ## Release Signatures and Provenance
+
+  #   All Argo CD container images are signed by cosign.  A Provenance is generated for container images and CLI binaries which meet the SLSA Level 3 specifications. See the [documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/signed-release-assets) on how to verify.
+
+  #   ## Release Notes Blog Post
+  #   For a detailed breakdown of the key changes and improvements in this release, check out the [official blog post](https://blog.argoproj.io/argo-cd-v3-0-release-candidate-a0b933f4e58f)
+
+  #   ## Upgrading
+
+  #   If upgrading from a different minor version, be sure to read the [upgrading](https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/) documentation.
   header: |
     ## Quick Start
 
-    ### Non-HA:
+    ### Clusterwide installation:
+
+    ```shell
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-monorepo-controller/{{.Tag}}/manifests/install.yaml
+    ```
+
+    ### Namespaced install:
 
     ```shell
     kubectl create namespace argocd
-    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/{{.Tag}}/manifests/install.yaml
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-monorepo-controller/{{.Tag}}/manifests/install-namespaced.yaml
     ```
 
-    ### HA:
-
-    ```shell
-    kubectl create namespace argocd
-    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/{{.Tag}}/manifests/ha/install.yaml
-    ```
-
-    ## Release Signatures and Provenance
-
-    All Argo CD container images are signed by cosign.  A Provenance is generated for container images and CLI binaries which meet the SLSA Level 3 specifications. See the [documentation](https://argo-cd.readthedocs.io/en/stable/operator-manual/signed-release-assets) on how to verify.
-
-    ## Release Notes Blog Post
-    For a detailed breakdown of the key changes and improvements in this release, check out the [official blog post](https://blog.argoproj.io/argo-cd-v3-0-release-candidate-a0b933f4e58f)
-
-    ## Upgrading
-
-    If upgrading from a different minor version, be sure to read the [upgrading](https://argo-cd.readthedocs.io/en/stable/operator-manual/upgrading/overview/) documentation.
   footer: |
-    **Full Changelog**: https://github.com/argoproj/argo-cd/compare/{{ .PreviousTag }}...{{ .Tag }}
-
-    <a href="https://argoproj.github.io/cd/"><img src="https://raw.githubusercontent.com/argoproj/argo-site/master/content/pages/cd/gitops-cd.png" width="25%" ></a>
+    **Full Changelog**: https://github.com/argoproj-labs/argocd-monorepo-controller/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 snapshot: #### To be removed for PR
   version_template: '2.6.0'
