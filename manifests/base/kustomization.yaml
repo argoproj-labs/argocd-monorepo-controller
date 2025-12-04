@@ -7,5 +7,5 @@ resources:
 - ./config
 images:
 - name: quay.io/argoprojlabs/argocd-monorepo-controller
-  newName: quay.io/eugened/argocd-monorepo-controller
+  newName: quay.io/argoprojlabs/argocd-monorepo-controller
   newTag: v0.0.4-rc1
