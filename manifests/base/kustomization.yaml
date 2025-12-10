@@ -8,4 +8,4 @@ resources:
 images:
 - name: quay.io/argoprojlabs/argocd-monorepo-controller
   newName: quay.io/argoprojlabs/argocd-monorepo-controller
-  newTag: latest
+  newTag: v0.0.4-rc2
