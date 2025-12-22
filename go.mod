@@ -41,7 +41,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.1-0.20191004192108-46f407853014+incompatible
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/redis/go-redis/v9 v9.8.0
+	github.com/redis/go-redis/v9 v9.17.2
 	github.com/robfig/cron/v3 v3.0.2-0.20210106135023-bc59245fe10e
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.2
