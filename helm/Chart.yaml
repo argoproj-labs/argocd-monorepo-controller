@@ -1,9 +1,9 @@
 apiVersion: v2
-appVersion: v0.0.4-rc3
+appVersion: v0.0.4
 kubeVersion: ">=1.25.0-0"
 description: A Helm chart for Argocd Monorepo Controller, an ArgoCD addon that accurately tracks last commits that actually changed the application
 name: argocd-monorepo-controller
-version: v0.0.4-rc3
+version: v0.0.4
 home: https://github.com/argoproj-labs/argocd-monorepo-controller
 icon: https://argocd-monorepo-controller.readthedocs.io/en/latest/assets/logo.png
 sources:

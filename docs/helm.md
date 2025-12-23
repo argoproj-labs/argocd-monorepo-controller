@@ -1,6 +1,6 @@
 # argocd-monorepo-controller
 
-![Version: v0.0.4-rc3](https://img.shields.io/badge/Version-v0.0.4--rc3-informational?style=flat-square) ![AppVersion: v0.0.4-rc3](https://img.shields.io/badge/AppVersion-v0.0.4--rc3-informational?style=flat-square)
+![Version: v0.0.4](https://img.shields.io/badge/Version-v0.0.4-informational?style=flat-square) ![AppVersion: v0.0.4](https://img.shields.io/badge/AppVersion-v0.0.4-informational?style=flat-square)
 
 A Helm chart for Argocd Monorepo Controller, an ArgoCD addon that accurately tracks last commits that actually changed the application
 
@@ -119,7 +119,7 @@ Kubernetes: `>=1.25.0-0`
 | global.hostAliases | list | `[]` | Mapping between IP and hostnames that will be injected as entries in the pod's hosts files |
 | global.image.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied to all Argo CD deployments |
 | global.image.repository | string | `"quay.io/argoprojlabs/argocd-monorepo-controller"` | If defined, a repository applied to all Argo CD deployments |
-| global.image.tag | string | `"v0.0.4-rc2"` | Overrides the global Argo CD image tag whose default is the chart appVersion |
+| global.image.tag | string | `"v0.0.4"` | Overrides the global Argo CD image tag whose default is the chart appVersion |
 | global.imagePullSecrets | list | `[]` | Secrets with credentials to pull images from a private registry |
 | global.logging.format | string | `"text"` | Set the global logging format. Either: `text` or `json` |
 | global.logging.level | string | `"info"` | Set the global logging level. One of: `debug`, `info`, `warn` or `error` |
