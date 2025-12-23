@@ -1,4 +1,16 @@
 # Changelog
+
+## v0.0.4 (2025-12-23)
+
+- docs: relatively complete documentation on architecture, installation and configuration
+- docs: better examples for notification configuration
+- installation: Helm chart
+- installation: fixes for installation manifests
+- functionality: many bugfixes for core functionality, better logging and robsutness
+- chore: version updates for dependencies
+- tests: added codecov
+
+
 ## v0.0.3 (2025-07-09)
 
 - ci: publishing images to `quay.io/argoprojlabs/argocd-monorepo-controller`
