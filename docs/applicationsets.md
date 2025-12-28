@@ -26,10 +26,9 @@ configs:
 
 While you can also configure this for specific ApplicationSets using
 the `preservedFields` property, a global configuration is generally
-better. Without a global setting, any ApplicationSet that lacks these
-`preservedFields` property,but utilizes the manifest-generate-path
-annotation, will cause the controllers to enter a continuous add/delete
-loop.
-
+better. Without a global setting, any ApplicationSet that lacks this
+`preservedFields` property, but utilizes the manifest-generate-path
+annotation, will cause the controllers to enter a continuous
+add/delete loop.
 
 For more details, see the ArgoCD documentation: [Preserving changes made to an Applications annotations and labels](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Controlling-Resource-Modification/#preserving-changes-made-to-an-applications-annotations-and-labels).

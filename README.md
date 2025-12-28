@@ -1,13 +1,13 @@
-# Argo Monorepo Controller
+# ArgoCD Monorepo Controller
 
 [![Documentation Status](https://readthedocs.org/projects/argocd-monorepo-controller/badge/?version=latest)](https://argocd-monorepo-controller-dev.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/dudinea/argocd-monorepo-controller/branch/dev/graph/badge.svg)](https://codecov.io/gh/dudinea/argocd-monorepo-controller)
 
-## What is Argo Monorepo Controller?
+## What is ArgoCD Monorepo Controller?
 
 This controller is an ArgoCD addon that accurately tracks last commits
 that actually changed the application (Change Revision). It is mostly
-usefull when several Applications are looking at different paths at
+useful when several Applications are looking at different paths at
 the same repository/branch (monorepos) .
 
 ## Documentation
@@ -34,17 +34,14 @@ One quick way to try it is to use command like this:
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-monorepo-controller/refs/heads/main/manifests/install.yaml
 ```
 
-Or use `kustomize` to install kustomization from
-https://github.com/argoproj-labs/argocd-monorepo-controller/tree/main/manifests
+You can as well install it using kustomize an Helm, see the
+[installation documentation](https://argocd-monorepo-controller.readthedocs.io/en/latest/install) for more information.
 
-## Configuring notifications
-
-See sample triggers and templates in samples/notifications.
 
 ## Development 
 
-The project is based on essencially the same Makefile and other Argocd
-infrastructure, so Argocd Developer Documentation can be currently
+The project is based on essentially the same Makefile and other ArgoCD
+infrastructure, so ArgoCD Developer Documentation can be currently
 used.
 
 One quick way to build and run it locally is:

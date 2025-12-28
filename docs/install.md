@@ -18,7 +18,8 @@ is not supported.
 ## Method 1: Installing using provided plain manifests
 
 We provide two installation manifests: 
-* `install.yaml' - with cluster-wide permissions to watch Application
+
+* `install.yaml` - with cluster-wide permissions to watch Application
   manifests in any namespece
 * `install-namespaced.yaml` - for a namespaced ArgoCD instance that
   will watch Application only in the ArgoCD namespace.

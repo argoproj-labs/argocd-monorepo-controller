@@ -140,9 +140,9 @@ window.addEventListener("DOMContentLoaded", function() {
   const currentVersion = getCurrentVersion();
   if (currentVersion && currentVersion !== "stable") {
     if (currentVersion === "latest") {
-      document.querySelector("div[data-md-component=announce]").innerHTML = "<div id='announce-msg'>You are viewing the docs for an unreleased version of Argo CD Monorepo Controller, <a href='https://argocd-monorepo-controller-dev.readthedocs.io/en/stable/'>click here to go to the latest stable version.</a></div>";
+      document.querySelector("div[data-md-component=announce]").innerHTML = "<div id='announce-msg'>You are viewing the docs for an unreleased version of Argo CD Monorepo Controller, <a href='https://argocd-monorepo-controller.readthedocs.io/en/stable/'>click here to go to the latest stable version.</a></div>";
     } else {
-      document.querySelector("div[data-md-component=announce]").innerHTML = "<div id='announce-msg'>You are viewing the docs for a previous version of Argo CD, <a href='https://argocd-monorepo-controller-dev.readthedocs.io/en/stable/'>click here to go to the latest stable version.</a></div>";
+      document.querySelector("div[data-md-component=announce]").innerHTML = "<div id='announce-msg'>You are viewing the docs for a previous version of Argo CD, <a href='https://argocd-monorepo-controller.readthedocs.io/en/stable/'>click here to go to the latest stable version.</a></div>";
     }
     var bannerHeight = document.getElementById('announce-msg').offsetHeight + margin;
     document.querySelector("header.md-header").style.top = bannerHeight + "px";
