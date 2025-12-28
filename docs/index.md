@@ -38,11 +38,7 @@ One quick way to try it is to use command like this:
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-monorepo-controller/refs/heads/main/manifests/install.yaml
 ```
 
-Or use `kustomize` to install kustomization from
-
-[https://github.com/argoproj-labs/argocd-monorepo-controller/tree/main/manifests]
-
-For additional details see our [installation documentation](install.md).
+For additional details and other installation methods see our [installation documentation](install.md).
 
 ## Configuring notifications
 
