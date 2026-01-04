@@ -19,6 +19,10 @@ func (m *nativeGitClient) ListRevisions(revision string, targetRevision string) 
 	if revision == targetRevision {
 		return []string{revision}, nil
 	}
+	if m.OnRevList != nil {
+		done := m.OnRevList(m.repoURL)
+		defer done()
+	}
 
 	out, err := m.runCmd("rev-list", "--ancestry-path", fmt.Sprintf("%s..%s", revision, targetRevision))
 	if err != nil {
@@ -35,6 +39,11 @@ func (m *nativeGitClient) DiffTree(targetRevision string) ([]string, error) {
 	if !IsCommitSHA(targetRevision) {
 		return []string{}, errors.New("invalid revision provided, must be SHA")
 	}
+	if m.OnDiffTree != nil {
+		done := m.OnDiffTree(m.repoURL)
+		defer done()
+	}
+
 	out, err := m.runCmd("diff-tree", "--no-commit-id", "--name-only", "-r", targetRevision)
 	if err != nil {
 		return nil, fmt.Errorf("failed to diff %s: %w", targetRevision, err)

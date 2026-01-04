@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -111,7 +110,7 @@ type Client interface {
 	Fetch(revision string) error
 	Submodule() error
 	Checkout(revision string, submoduleEnabled bool) (string, error)
-	LsRefs() (*Refs, error)
+	// LsRefs() (*Refs, error)
 	LsRemote(revision string) (string, error)
 	LsFiles(path string, enableNewGitFileGlobbing bool) ([]string, error)
 	LsLargeFiles() ([]string, error)
@@ -140,6 +139,8 @@ type EventHandlers struct {
 	OnLsRemote func(repo string) func()
 	OnFetch    func(repo string) func()
 	OnPush     func(repo string) func()
+	OnDiffTree func(repo string) func()
+	OnRevList  func(repo string) func()
 }
 
 // nativeGitClient implements Client interface using git CLI
@@ -635,33 +636,33 @@ func (m *nativeGitClient) getRefs() ([]*plumbing.Reference, error) {
 	return res, err
 }
 
-func (m *nativeGitClient) LsRefs() (*Refs, error) {
-	refs, err := m.getRefs()
-	if err != nil {
-		return nil, err
-	}
+// func (m *nativeGitClient) LsRefs() (*Refs, error) {
+// 	refs, err := m.getRefs()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	sortedRefs := &Refs{
-		Branches: []string{},
-		Tags:     []string{},
-	}
+// 	sortedRefs := &Refs{
+// 		Branches: []string{},
+// 		Tags:     []string{},
+// 	}
 
-	for _, revision := range refs {
-		if revision.Name().IsBranch() {
-			sortedRefs.Branches = append(sortedRefs.Branches, revision.Name().Short())
-		} else if revision.Name().IsTag() {
-			sortedRefs.Tags = append(sortedRefs.Tags, revision.Name().Short())
-		}
-	}
+// 	for _, revision := range refs {
+// 		if revision.Name().IsBranch() {
+// 			sortedRefs.Branches = append(sortedRefs.Branches, revision.Name().Short())
+// 		} else if revision.Name().IsTag() {
+// 			sortedRefs.Tags = append(sortedRefs.Tags, revision.Name().Short())
+// 		}
+// 	}
 
-	log.Debugf("LsRefs resolved %d branches and %d tags on repository", len(sortedRefs.Branches), len(sortedRefs.Tags))
+// 	log.Debugf("LsRefs resolved %d branches and %d tags on repository", len(sortedRefs.Branches), len(sortedRefs.Tags))
 
-	// Would prefer to sort by last modified date but that info does not appear to be available without resolving each ref
-	sort.Strings(sortedRefs.Branches)
-	sort.Strings(sortedRefs.Tags)
+// 	// Would prefer to sort by last modified date but that info does not appear to be available without resolving each ref
+// 	sort.Strings(sortedRefs.Branches)
+// 	sort.Strings(sortedRefs.Tags)
 
-	return sortedRefs, nil
-}
+// 	return sortedRefs, nil
+// }
 
 // LsRemote resolves the commit SHA of a specific branch, tag (with semantic versioning or not),
 // or HEAD. If the supplied revision does not resolve, and "looks" like a 7+ hexadecimal commit SHA,

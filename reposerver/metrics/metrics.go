@@ -11,14 +11,19 @@ import (
 )
 
 type MetricsServer struct {
-	handler                  http.Handler
-	gitFetchFailCounter      *prometheus.CounterVec
-	gitLsRemoteFailCounter   *prometheus.CounterVec
-	gitRequestCounter        *prometheus.CounterVec
-	gitRequestHistogram      *prometheus.HistogramVec
-	repoPendingRequestsGauge *prometheus.GaugeVec
-	redisRequestCounter      *prometheus.CounterVec
-	redisRequestHistogram    *prometheus.HistogramVec
+	handler                           http.Handler
+	gitFetchFailCounter               *prometheus.CounterVec
+	gitLsRemoteFailCounter            *prometheus.CounterVec
+	gitDiffTreeFailCounter            *prometheus.CounterVec
+	gitRevListFailCounter             *prometheus.CounterVec
+	gitRequestCounter                 *prometheus.CounterVec
+	gitRequestHistogram               *prometheus.HistogramVec
+	getChangeRevisionRequestCounter   *prometheus.CounterVec
+	getChangeRevisionRequestHistogram *prometheus.HistogramVec
+	repoPendingRequestsGauge          *prometheus.GaugeVec
+	redisRequestCounter               *prometheus.CounterVec
+	redisRequestHistogram             *prometheus.HistogramVec
+	PrometheusRegistry                *prometheus.Registry
 }
 
 type GitRequestType string
@@ -26,6 +31,8 @@ type GitRequestType string
 const (
 	GitRequestTypeLsRemote = "ls-remote"
 	GitRequestTypeFetch    = "fetch"
+	GitRequestTypeDiffTree = "diff-tree"
+	GitRequestTypeRevList  = "rev-list"
 )
 
 // NewMetricsServer returns a new prometheus server which collects application metrics.
@@ -34,9 +41,28 @@ func NewMetricsServer() *MetricsServer {
 	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	registry.MustRegister(collectors.NewGoCollector())
 
+	getChangeRevisionRequestCounter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "monorepo_getchangerevision_request_total",
+			Help: "Number of GetChangeRevision requests executed.",
+		},
+		[]string{"repo", "failed", "application", "namespace"},
+	)
+	registry.MustRegister(getChangeRevisionRequestCounter)
+
+	getChangeRevisionRequestHistogram := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "monorepo_getchangerevision_request_duration_seconds",
+			Help:    "GetChangeRevision requests duration seconds.",
+			Buckets: []float64{0.1, 0.25, .5, 1, 2, 4, 10, 20},
+		},
+		[]string{"repo", "application", "namespace"},
+	)
+	registry.MustRegister(getChangeRevisionRequestHistogram)
+
 	gitFetchFailCounter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_git_fetch_fail_total",
+			Name: "monorepo_git_fetch_fail_total",
 			Help: "Number of git fetch requests failures by repo server",
 		},
 		[]string{"repo", "revision"},
@@ -45,16 +71,34 @@ func NewMetricsServer() *MetricsServer {
 
 	gitLsRemoteFailCounter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_git_lsremote_fail_total",
+			Name: "monorepo_git_lsremote_fail_total",
 			Help: "Number of git ls-remote requests failures by repo server",
 		},
 		[]string{"repo", "revision"},
 	)
 	registry.MustRegister(gitLsRemoteFailCounter)
 
+	gitRevListFailCounter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "monorepo_git_revlist_fail_total",
+			Help: "Number of git rev-list requests failures by repo server",
+		},
+		[]string{"repo", "app", "namespace"},
+	)
+	registry.MustRegister(gitRevListFailCounter)
+
+	gitDiffTreeFailCounter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "monorepo_git_difftree_fail_total",
+			Help: "Number of git diff-tree requests failures by repo server",
+		},
+		[]string{"repo", "app", "namespace"},
+	)
+	registry.MustRegister(gitDiffTreeFailCounter)
+
 	gitRequestCounter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_git_request_total",
+			Name: "monorepo_git_request_total",
 			Help: "Number of git requests performed by repo server",
 		},
 		[]string{"repo", "request_type"},
@@ -63,7 +107,7 @@ func NewMetricsServer() *MetricsServer {
 
 	gitRequestHistogram := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_git_request_duration_seconds",
+			Name:    "monorepo_git_request_duration_seconds",
 			Help:    "Git requests duration seconds.",
 			Buckets: []float64{0.1, 0.25, .5, 1, 2, 4, 10, 20},
 		},
@@ -73,7 +117,7 @@ func NewMetricsServer() *MetricsServer {
 
 	repoPendingRequestsGauge := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "argocd_repo_pending_request_total",
+			Name: "monorepo_repo_pending_request_total",
 			Help: "Number of pending requests requiring repository lock",
 		},
 		[]string{"repo"},
@@ -82,8 +126,8 @@ func NewMetricsServer() *MetricsServer {
 
 	redisRequestCounter := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_redis_request_total",
-			Help: "Number of kubernetes requests executed during application reconciliation.",
+			Name: "monorepo_redis_request_total",
+			Help: "Number of redis requests executed.",
 		},
 		[]string{"initiator", "failed"},
 	)
@@ -91,7 +135,7 @@ func NewMetricsServer() *MetricsServer {
 
 	redisRequestHistogram := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_redis_request_duration_seconds",
+			Name:    "monorepo_redis_request_duration_seconds",
 			Help:    "Redis requests duration seconds.",
 			Buckets: []float64{0.1, 0.25, .5, 1, 2},
 		},
@@ -100,14 +144,19 @@ func NewMetricsServer() *MetricsServer {
 	registry.MustRegister(redisRequestHistogram)
 
 	return &MetricsServer{
-		handler:                  promhttp.HandlerFor(registry, promhttp.HandlerOpts{}),
-		gitFetchFailCounter:      gitFetchFailCounter,
-		gitLsRemoteFailCounter:   gitLsRemoteFailCounter,
-		gitRequestCounter:        gitRequestCounter,
-		gitRequestHistogram:      gitRequestHistogram,
-		repoPendingRequestsGauge: repoPendingRequestsGauge,
-		redisRequestCounter:      redisRequestCounter,
-		redisRequestHistogram:    redisRequestHistogram,
+		handler:                           promhttp.HandlerFor(registry, promhttp.HandlerOpts{}),
+		gitFetchFailCounter:               gitFetchFailCounter,
+		gitLsRemoteFailCounter:            gitLsRemoteFailCounter,
+		gitRevListFailCounter:             gitRevListFailCounter,
+		gitDiffTreeFailCounter:            gitDiffTreeFailCounter,
+		getChangeRevisionRequestCounter:   getChangeRevisionRequestCounter,
+		getChangeRevisionRequestHistogram: getChangeRevisionRequestHistogram,
+		gitRequestCounter:                 gitRequestCounter,
+		gitRequestHistogram:               gitRequestHistogram,
+		repoPendingRequestsGauge:          repoPendingRequestsGauge,
+		redisRequestCounter:               redisRequestCounter,
+		redisRequestHistogram:             redisRequestHistogram,
+		PrometheusRegistry:                registry,
 	}
 }
 
@@ -121,6 +170,14 @@ func (m *MetricsServer) IncGitFetchFail(repo string, revision string) {
 
 func (m *MetricsServer) IncGitLsRemoteFail(repo string, revision string) {
 	m.gitLsRemoteFailCounter.WithLabelValues(repo, revision).Inc()
+}
+
+func (m *MetricsServer) IncDiffTreeFail(repo string, app string, namespace string) {
+	m.gitDiffTreeFailCounter.WithLabelValues(repo, app, namespace).Inc()
+}
+
+func (m *MetricsServer) IncRevListFail(repo string, app string, namespace string) {
+	m.gitRevListFailCounter.WithLabelValues(repo, app, namespace).Inc()
 }
 
 // IncGitRequest increments the git requests counter
@@ -146,4 +203,12 @@ func (m *MetricsServer) IncRedisRequest(failed bool) {
 
 func (m *MetricsServer) ObserveRedisRequestDuration(duration time.Duration) {
 	m.redisRequestHistogram.WithLabelValues("argocd-repo-server").Observe(duration.Seconds())
+}
+
+func (m *MetricsServer) IncGetChangeRevisionRequest(repo string, failed bool, app string, namespace string) {
+	m.getChangeRevisionRequestCounter.WithLabelValues(repo, strconv.FormatBool(failed), app, namespace).Inc()
+}
+
+func (m *MetricsServer) ObserveGetChangeRevisionRequestDuration(duration time.Duration, repo string, app string, namespace string) {
+	m.getChangeRevisionRequestHistogram.WithLabelValues(repo, app, namespace).Observe(duration.Seconds())
 }

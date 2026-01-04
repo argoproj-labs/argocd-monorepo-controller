@@ -45,19 +45,19 @@ const (
 // dashboards/alerts/etc. designed for Kubernetes.
 var (
 	clientCertRotationAgeGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "argocd_kubectl_client_cert_rotation_age_seconds",
+		Name: "monorepo_kubectl_client_cert_rotation_age_seconds",
 		Help: "Age of a certificate that has just been rotated",
 	}, []string{})
 
 	requestLatencyHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    "argocd_kubectl_request_duration_seconds",
+		Name:    "monorepo_kubectl_request_duration_seconds",
 		Help:    "Request latency in seconds",
 		Buckets: []float64{0.005, 0.1, 0.5, 2.0, 8.0, 30.0},
 	}, []string{LabelHost, LabelVerb})
 
 	resolverLatencyHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_kubectl_dns_resolution_duration_seconds",
+			Name:    "monorepo_kubectl_dns_resolution_duration_seconds",
 			Help:    "Kubectl resolver latency",
 			Buckets: []float64{0.005, 0.1, 0.5, 2.0, 8.0, 30.0},
 		},
@@ -66,7 +66,7 @@ var (
 
 	requestSizeHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "argocd_kubectl_request_size_bytes",
+			Name: "monorepo_kubectl_request_size_bytes",
 			Help: "Size of kubectl requests",
 			// 64 bytes to 16MB
 			Buckets: []float64{64, 512, 4096, 65536, 1048576, 16777216},
@@ -76,7 +76,7 @@ var (
 
 	responseSizeHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "argocd_kubectl_response_size_bytes",
+			Name: "monorepo_kubectl_response_size_bytes",
 			Help: "Size of kubectl responses",
 			// 64 bytes to 16MB
 			Buckets: []float64{64, 512, 4096, 65536, 1048576, 16777216},
@@ -86,7 +86,7 @@ var (
 
 	rateLimiterLatencyHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_kubectl_rate_limiter_duration_seconds",
+			Name:    "monorepo_kubectl_rate_limiter_duration_seconds",
 			Help:    "Kubectl rate limiter latency",
 			Buckets: []float64{0.005, 0.1, 0.5, 2.0, 8.0, 30.0},
 		},
@@ -95,7 +95,7 @@ var (
 
 	requestResultCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_kubectl_requests_total",
+			Name: "monorepo_kubectl_requests_total",
 			Help: "Number of kubectl request results",
 		},
 		[]string{LabelHost, LabelMethod, LabelCode},
@@ -103,7 +103,7 @@ var (
 
 	execPluginCallsCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_kubectl_exec_plugin_call_total",
+			Name: "monorepo_kubectl_exec_plugin_call_total",
 			Help: "Number of kubectl exec plugin calls",
 		},
 		[]string{LabelCode, LabelCallStatus},
@@ -111,7 +111,7 @@ var (
 
 	requestRetryCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_kubectl_request_retries_total",
+			Name: "monorepo_kubectl_request_retries_total",
 			Help: "Number of kubectl request retries",
 		},
 		[]string{LabelHost, LabelMethod, LabelCode},
@@ -119,7 +119,7 @@ var (
 
 	transportCacheEntriesGauge = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "argocd_kubectl_transport_cache_entries",
+			Name: "monorepo_kubectl_transport_cache_entries",
 			Help: "Number of kubectl transport cache entries",
 		},
 		[]string{},
@@ -127,7 +127,7 @@ var (
 
 	transportCreateCallsCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_kubectl_transport_create_calls_total",
+			Name: "monorepo_kubectl_transport_create_calls_total",
 			Help: "Number of kubectl transport create calls",
 		},
 		[]string{LabelResult},

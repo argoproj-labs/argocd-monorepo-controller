@@ -11,6 +11,7 @@ import (
 
 	"github.com/argoproj/gitops-engine/pkg/health"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
@@ -59,7 +60,7 @@ var (
 	descAppConditions *prometheus.Desc
 
 	descAppInfo = prometheus.NewDesc(
-		"argocd_app_info",
+		"monorepo_app_info",
 		"Information about application.",
 		append(descAppDefaultLabels, "autosync_enabled", "repo", "dest_server", "dest_namespace", "sync_status", "health_status", "operation"),
 		nil,
@@ -67,7 +68,7 @@ var (
 
 	syncCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_app_sync_total",
+			Name: "monorepo_app_sync_total",
 			Help: "Number of application syncs.",
 		},
 		append(descAppDefaultLabels, "dest_server", "phase", "dry_run"),
@@ -75,7 +76,7 @@ var (
 
 	syncDuration = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_app_sync_duration_seconds_total",
+			Name: "monorepo_app_sync_duration_seconds_total",
 			Help: "Application sync performance in seconds total.",
 		},
 		append(descAppDefaultLabels, "dest_server"),
@@ -83,25 +84,25 @@ var (
 
 	k8sRequestCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_app_k8s_request_total",
+			Name: "monorepo_app_k8s_request_total",
 			Help: "Number of kubernetes requests executed during application reconciliation.",
 		},
 		append(descAppDefaultLabels, "server", "response_code", "verb", "resource_kind", "resource_namespace", "dry_run"),
 	)
 
 	kubectlExecCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "argocd_kubectl_exec_total",
+		Name: "monorepo_kubectl_exec_total",
 		Help: "Number of kubectl executions",
 	}, []string{"hostname", "command"})
 
 	kubectlExecPendingGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "argocd_kubectl_exec_pending",
+		Name: "monorepo_kubectl_exec_pending",
 		Help: "Number of pending kubectl executions",
 	}, []string{"hostname", "command"})
 
 	reconcileHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "argocd_app_reconcile",
+			Name: "monorepo_app_reconcile",
 			Help: "Application reconciliation performance in seconds.",
 			// Buckets chosen after observing a ~2100ms mean reconcile time
 			Buckets: []float64{0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16},
@@ -111,7 +112,7 @@ var (
 
 	repoServerRequestCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "argocd_repo_server_request_total",
+			Name: "monorepo_repo_server_request_total",
 			Help: "Number of repo server requests executed during application reconciliation.",
 		},
 		[]string{"hostname", "initiator", "failed"},
@@ -119,7 +120,7 @@ var (
 
 	repoServerRequestHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_repo_server_request_duration",
+			Name:    "monorepo_repo_server_request_duration",
 			Help:    "Repo server requests duration.",
 			Buckets: []float64{0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16},
 		},
@@ -128,7 +129,7 @@ var (
 
 	orphanedResourcesGauge = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "argocd_app_orphaned_resources_count",
+			Name: "monorepo_app_orphaned_resources_count",
 			Help: "Number of orphaned resources per application",
 		},
 		descAppDefaultLabels,
@@ -136,7 +137,7 @@ var (
 
 	resourceEventsProcessingHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "argocd_resource_events_processing",
+			Name:    "monorepo_resource_events_processing",
 			Help:    "Time to process resource events in seconds.",
 			Buckets: []float64{0.25, .5, 1, 2, 4, 8, 16},
 		},
@@ -144,7 +145,7 @@ var (
 	)
 
 	resourceEventsNumberGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "argocd_resource_events_processed_in_batch",
+		Name: "monorepo_resource_events_processed_in_batch",
 		Help: "Number of resource events processed in batch",
 	}, []string{"server"})
 )
@@ -159,7 +160,7 @@ func NewMetricsServer(addr string, appLister applister.ApplicationLister, appFil
 	if len(appLabels) > 0 {
 		normalizedLabels := metricsutil.NormalizeLabels("label", appLabels)
 		descAppLabels = prometheus.NewDesc(
-			"argocd_app_labels",
+			"monorepo_app_labels",
 			"Argo Application labels converted to Prometheus labels",
 			append(descAppDefaultLabels, normalizedLabels...),
 			nil,
@@ -168,7 +169,7 @@ func NewMetricsServer(addr string, appLister applister.ApplicationLister, appFil
 
 	if len(appConditions) > 0 {
 		descAppConditions = prometheus.NewDesc(
-			"argocd_app_condition",
+			"monorepo_app_condition",
 			"Report application conditions.",
 			append(descAppDefaultLabels, "condition"),
 			nil,
@@ -187,6 +188,8 @@ func NewMetricsServer(addr string, appLister applister.ApplicationLister, appFil
 	// profile.RegisterProfiler(mux)
 	healthz.ServeHealthCheck(mux, healthCheck)
 
+	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	registry.MustRegister(collectors.NewGoCollector())
 	registry.MustRegister(syncCounter)
 	registry.MustRegister(syncDuration)
 	registry.MustRegister(k8sRequestCounter)
