@@ -1,11 +1,11 @@
-# ArgoCD Monorepo Controller
+# Argo CD Monorepo Controller
 
 [![Documentation Status](https://readthedocs.org/projects/argocd-monorepo-controller/badge/?version=latest)](https://argocd-monorepo-controller-dev.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/dudinea/argocd-monorepo-controller/branch/dev/graph/badge.svg)](https://codecov.io/gh/dudinea/argocd-monorepo-controller)
 
-## What is ArgoCD Monorepo Controller?
+## What is Argo CD Monorepo Controller?
 
-This controller is an ArgoCD addon that accurately tracks last commits
+This controller is an Argo CD addon that accurately tracks last commits
 that actually changed the application (Change Revision). It is mostly
 useful when several Applications are looking at different paths at
 the same repository/branch (monorepos) .
@@ -27,7 +27,7 @@ _USE AT YOUR OWN RISK!_
 ## Installation
 
 The controller should be installed into the namespace of an
-existing ArgoCD instance (the `argocd` namespace  in most cases).
+existing Argo CD instance (the `argocd` namespace  in most cases).
 
 One quick way to try it is to use command like this:
 ```
@@ -40,8 +40,8 @@ You can as well install it using kustomize an Helm, see the
 
 ## Development 
 
-The project is based on essentially the same Makefile and other ArgoCD
-infrastructure, so ArgoCD Developer Documentation can be currently
+The project is based on essentially the same Makefile and other Argo CD
+infrastructure, so Argo CD Developer Documentation can be currently
 used.
 
 One quick way to build and run it locally is:
