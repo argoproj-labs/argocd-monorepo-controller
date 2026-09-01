@@ -1,6 +1,6 @@
 # argocd-monorepo-controller
 
-![Version: v0.0.4-rc3](https://img.shields.io/badge/Version-v0.0.4--rc3-informational?style=flat-square) ![AppVersion: v0.0.4-rc3](https://img.shields.io/badge/AppVersion-v0.0.4--rc3-informational?style=flat-square)
+![Version: v0.0.6](https://img.shields.io/badge/Version-v0.0.6-informational?style=flat-square) ![AppVersion: v0.0.6](https://img.shields.io/badge/AppVersion-v0.0.6-informational?style=flat-square)
 
 A Helm chart for Argocd Monorepo Controller, an ArgoCD addon that accurately tracks last commits that actually changed the application
 
@@ -18,6 +18,7 @@ Kubernetes: `>=1.25.0-0`
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| configs.params."controller.event.handling.timeout.seconds" | string | `"120"` |  |
 | configs.params.annotations | object | `{}` | Annotations to be added to the argocd-cmd-params-cm ConfigMap |
 | configs.params.create | bool | `true` | Create the argocd-cmd-params-cm configmap If false, it is expected the configmap will be created by something else. |
 | controller.affinity | object | `{}` (defaults to global.affinity preset) | Assign custom [affinity] rules to the deployment |
@@ -119,7 +120,7 @@ Kubernetes: `>=1.25.0-0`
 | global.hostAliases | list | `[]` | Mapping between IP and hostnames that will be injected as entries in the pod's hosts files |
 | global.image.imagePullPolicy | string | `"IfNotPresent"` | If defined, a imagePullPolicy applied to all Argo CD deployments |
 | global.image.repository | string | `"quay.io/argoprojlabs/argocd-monorepo-controller"` | If defined, a repository applied to all Argo CD deployments |
-| global.image.tag | string | `"v0.0.4-rc2"` | Overrides the global Argo CD image tag whose default is the chart appVersion |
+| global.image.tag | string | `""` | Overrides the global Argo Monorepo controller CD image tag whose default is the chart appVersion |
 | global.imagePullSecrets | list | `[]` | Secrets with credentials to pull images from a private registry |
 | global.logging.format | string | `"text"` | Set the global logging format. Either: `text` or `json` |
 | global.logging.level | string | `"info"` | Set the global logging level. One of: `debug`, `info`, `warn` or `error` |
