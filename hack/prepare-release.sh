@@ -18,14 +18,14 @@ if ! echo "${NEW_TAG}" | grep -E -q '^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)*$'; the
 	exit 1
 fi
 
-VERSION=$(echo $NEW_TAG | sed -e "s/^v//g")
+VERSION=$(echo "$NEW_TAG" | sed -e "s/^v//g")
 echo "VERSION=$VERSION"
 
 # Check whether we are in correct branch of local repository
 #RELEASE_BRANCH="${NEW_TAG%\.[0-9]*}"
 #RELEASE_BRANCH="release-${RELEASE_BRANCH#*v}"
 RELEASE_BRANCH="release-${VERSION}"
-RELEASE_BRANCH=$(echo $RELEASE_BRANCH | sed -e "s/-rc[0-9]$//g")
+RELEASE_BRANCH=$(echo "$RELEASE_BRANCH" | sed -e "s/-rc[0-9]\+\$//g")
 
 currentBranch=$(git branch --show-current)
 if test "$currentBranch" != "${RELEASE_BRANCH}"; then
