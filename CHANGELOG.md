@@ -2,10 +2,18 @@
 
 ## v0.0.7 (2026-09-01)
 
+### Fixes
+
+- Add missing Networkpolicy template for redis connections 
+
+### Documentation
+
+- Add documentation for new parameters to the Configuration guide
+
 ### Other
 
-- Add prepare release script to update version tag in Helm Chart, Kustomize manifests and other places
-
+- Add prepare-release script to update version tag in Helm Chart, Kustomize manifests and other places
+- Update golang version in the release workflow
 
 ## v0.0.6 (2026-09-01)
 
