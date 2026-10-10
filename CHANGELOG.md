@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.0.8 (2026-10-06)
+
+### Features
+
+- Implement Argocd UI Status Plugin
+
+### Other
+
+- Bump golang dependencies
+
+
+## v0.0.7 (2026-09-03)
+
+### Documentation
+
+- Add new parameters to configuration guide
+- Properly document redis.name
+- Fix helm installation url: add required oci prefix
+
 ## v0.0.6 (2026-09-01)
 
 ### Features
