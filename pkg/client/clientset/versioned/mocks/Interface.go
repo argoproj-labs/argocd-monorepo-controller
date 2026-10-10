@@ -93,19 +93,19 @@ func (_c *Interface_ArgoprojV1alpha1_Call) RunAndReturn(run func() v1alpha1.Argo
 }
 
 // Discovery provides a mock function for the type Interface
-func (_mock *Interface) Discovery() discovery.DiscoveryInterface {
+func (_mock *Interface) Discovery() discovery.DiscoveryInterfaces {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for Discovery")
 	}
 
-	var r0 discovery.DiscoveryInterface
-	if returnFunc, ok := ret.Get(0).(func() discovery.DiscoveryInterface); ok {
+	var r0 discovery.DiscoveryInterfaces
+	if returnFunc, ok := ret.Get(0).(func() discovery.DiscoveryInterfaces); ok {
 		r0 = returnFunc()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(discovery.DiscoveryInterface)
+			r0 = ret.Get(0).(discovery.DiscoveryInterfaces)
 		}
 	}
 	return r0
@@ -128,12 +128,12 @@ func (_c *Interface_Discovery_Call) Run(run func()) *Interface_Discovery_Call {
 	return _c
 }
 
-func (_c *Interface_Discovery_Call) Return(discoveryInterface discovery.DiscoveryInterface) *Interface_Discovery_Call {
-	_c.Call.Return(discoveryInterface)
+func (_c *Interface_Discovery_Call) Return(discoveryInterfaces discovery.DiscoveryInterfaces) *Interface_Discovery_Call {
+	_c.Call.Return(discoveryInterfaces)
 	return _c
 }
 
-func (_c *Interface_Discovery_Call) RunAndReturn(run func() discovery.DiscoveryInterface) *Interface_Discovery_Call {
+func (_c *Interface_Discovery_Call) RunAndReturn(run func() discovery.DiscoveryInterfaces) *Interface_Discovery_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -136,7 +136,7 @@ func NewClientApp(settings *settings.ArgoCDSettings, dexServerAddr string, dexTL
 
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
-		Dial: (&net.Dialer{
+		Dial: (&net.Dialer{ //nolint:staticcheck
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).Dial,

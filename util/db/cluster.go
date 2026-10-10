@@ -28,7 +28,7 @@ var (
 	localCluster = appv1.Cluster{
 		Name:            "in-cluster",
 		Server:          appv1.KubernetesInternalAPIServerAddr,
-		ConnectionState: appv1.ConnectionState{Status: appv1.ConnectionStatusSuccessful},
+		ConnectionState: appv1.ConnectionState{Status: appv1.ConnectionStatusSuccessful}, //nolint:staticcheck
 	}
 	initLocalCluster sync.Once
 )
