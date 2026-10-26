@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.0.9 (2026-11-26)
+
+### Features
+
+- Enable parallelism when handling applications update
+
+### Other
+
+- Bump golang dependencies
+- Bump golang compiler/runtime to 1.27.3
+
 ## v0.0.8 (2026-11-06)
 
 ### Features
