@@ -224,6 +224,42 @@ spec:
               key: controller.workers
               name: argocd-monorepo-cmd-params-cm
               optional: true
+        - name: MONOREPO_CONTROLLER_APP_RESYNC_PERIOD
+          valueFrom:
+            configMapKeyRef:
+              key: controller.app.resync.period
+              name: argocd-monorepo-cmd-params-cm
+              optional: true
+        - name: MONOREPO_CONTROLLER_RETRY_MAX_ATTEMPTS
+          valueFrom:
+            configMapKeyRef:
+              key: controller.retry.max.attempts
+              name: argocd-monorepo-cmd-params-cm
+              optional: true
+        - name: MONOREPO_CONTROLLER_RETRY_BASE_DELAY
+          valueFrom:
+            configMapKeyRef:
+              key: controller.retry.base.delay
+              name: argocd-monorepo-cmd-params-cm
+              optional: true
+        - name: MONOREPO_CONTROLLER_RETRY_MAX_DELAY
+          valueFrom:
+            configMapKeyRef:
+              key: controller.retry.max.delay
+              name: argocd-monorepo-cmd-params-cm
+              optional: true
+        - name: MONOREPO_CONTROLLER_RETRY_BACKOFF_FACTOR
+          valueFrom:
+            configMapKeyRef:
+              key: controller.retry.backoff.factor
+              name: argocd-monorepo-cmd-params-cm
+              optional: true
+        - name: MONOREPO_CONTROLLER_RETRY_JITTER
+          valueFrom:
+            configMapKeyRef:
+              key: controller.retry.jitter
+              name: argocd-monorepo-cmd-params-cm
+              optional: true
         image: quay.io/argoprojlabs/argocd-monorepo-controller:latest
         imagePullPolicy: Always
         name: argocd-monorepo-controller

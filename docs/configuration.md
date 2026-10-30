@@ -6,6 +6,7 @@ components, are configured using the `argocd-monorepo-cmd-params-cm` configmap.
 
 | Key                                       | Default                           | Description                                                        |
 |-------------------------------------------|-----------------------------------|--------------------------------------------------------------------|
+| controller.app.resync.period              | disabled by default               | Interval of handling every application again without an event      |
 | controller.event.handling.timeout.seconds | "120"                             | Context deadline for processing a single application event         |
 | controller.log.level                      | "info"                            | Monorepo Controller log level                                      |
 | controller.log.format                     | "text"                            | Monorepo Controller log format (text or json)                      |
@@ -16,6 +17,11 @@ components, are configured using the `argocd-monorepo-cmd-params-cm` configmap.
 | controller.repo.server.plaintext          | "false"                           | Use a non-TLS client to connect to repository  server              |
 | controller.repo.server.strict.tls         | "false"                           | Perform strict validation of monorepo repo server TLS certificates |
 | controller.repo.server.timeout.seconds    | "120"                             | Repo server RPC call timeout seconds.                              |
+| controller.retry.backoff.factor           | "2.0"                             | Multiplier applied to the retry delay after every attempt          |
+| controller.retry.base.delay               | "20s"                             | Delay before the first retry of a failed application               |
+| controller.retry.jitter                   | "0.4"                             | Fraction by which the retry delay is randomized                    |
+| controller.retry.max.attempts             | "3"                               | Retries of a failed application, "0" disables the retries          |
+| controller.retry.max.delay                | "15m"                             | Upper bound of the retry delay, "0" leaves it uncapped             |
 | controller.workers                        | "3"                               | Number of workers processing application events                    |
 | reposerver.log.level                      | "info"                            | Monorepo Controller log level                                      |
 | reposerver.log.format                     | "text"                            | Monorepo Repo Server log format (text or json)                     |
@@ -100,6 +106,40 @@ data:
   controller.event.handling.timeout: "5m"
 ```
 
+## Configure the application resync period
+
+A failing application is retried a bounded number of times. Once those
+attempts are used up the application is left alone until its next event, so
+its [Change Revision](terminology.md#change-revision) annotations stay stale
+for as long as nothing happens to it. On a quiet installation that can be a
+long time.
+
+The resync period closes that gap: the controller asks the Kubernetes
+informer to redeliver every application it watches at that interval, and
+handles each of them again. An application whose annotations are up to date
+costs almost nothing to handle again, because the controller compares the
+recorded Git revision with the current one and stops there without calling
+the monorepo repo server. The applications which never got their revisions
+calculated are the ones that do real work.
+
+The resync is disabled by default. Set `controller.app.resync.period` to a
+Go duration string of at least one minute to enable it; something well above
+the time a sweep of all your applications takes, such as `1h`, is a
+reasonable starting point. A redelivered application which is already
+waiting for a retry, or which was just handled, is recognized as unchanged:
+it neither restarts the retry backoff nor hands the application a new budget
+of attempts.
+
+**Example:**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-monorepo-cmd-params-cm
+data:
+  controller.app.resync.period: "1h"
+```
+
 ## Configuring network policies
 
 The Monorepo Controller installation using kustomize/manifests 
@@ -120,3 +160,40 @@ in your values.yaml.
 ## Configuring notifications
 
 See sample triggers and templates in samples/notifications.
+
+## Configuring Failures Handling
+
+Handling an application can fail for various reasons that have nothing
+to do with the application itself.  The controller classifies the
+error and, when the operation may succeed later, puts the application
+back into its queue and handles it again after a delay.
+
+The delay grows exponentially with every attempt: it starts at
+`controller.retry.base.delay`, is multiplied by
+`controller.retry.backoff.factor` after every attempt and never
+exceeds `controller.retry.max.delay`. A random fraction of up to
+`controller.retry.jitter` is then added or subtracted.
+
+An application is retried at most `controller.retry.max.attempts` times.
+After that the failure is logged at the error level and the application is
+left alone until its next event. Setting the parameter to `"0"` disables the
+retries. See [Configuration](configuration.md) for the parameters and
+[Metrics](metrics.md) for the metrics the retries are observable through.
+
+An event which brings a new version of an application clears the retry count.
+
+For multisource applications the sources are calculated independently,
+so a failure of one source does not discard the work done for the
+others: the annotations are patched with the [Change
+Revisions](terminology.md#change-revision) that were calculated, and
+the `mrp-controller.argoproj.io/git-revision(s)` entries of the failed
+sources are left at their previous values, so the retry recalculates
+exactly the sources which failed.
+
+An application whose retries were all used up is only looked at again
+when its next event arrives. The optional application resync period
+asks the informer to redeliver applications after a fixed interval.
+The resync is disabled by default becaise most Argo CD installations
+have non-zero `timeout.reconciliation` configured, which causes
+periodic reconciliation of applications, which delivers application
+updates to monorepo controller as well.

@@ -117,17 +117,22 @@ type sourceRevisions struct {
 	path             string
 }
 
+// makeChangeRevisionPatch calculates the revision annotations of the
+// application. A failure to calculate the revisions of a single source does not
+// discard the revisions calculated for the other sources: in that case both a
+// patch holding what has been calculated and an error joining the failures of
+// the individual sources are returned.
 func (c *mrpService) makeChangeRevisionPatch(ctx context.Context, logCtx *log.Entry, a *application.Application) (map[string]any, error) {
 	app, err := c.applicationClientset.ArgoprojV1alpha1().Applications(a.Namespace).Get(ctx, a.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting application: %w", err)
 	}
 	logCtx.Debugf("retrieved application resource version %s", app.ResourceVersion)
 	// we just need to know it exists, actual use of the value will be in calculateChangeRevision
 	manifestGenerationPaths, ok := a.Annotations[application.AnnotationKeyManifestGeneratePaths]
 	if !ok || manifestGenerationPaths == "" {
 		logCtx.Warnf("manifest generation paths not set for the application")
-		return nil, status.Errorf(codes.FailedPrecondition, "manifest generation paths not set")
+		return nil, NewPermanentError(status.Errorf(codes.FailedPrecondition, "manifest generation paths not set"))
 	}
 	logCtx.Debugf("manifest generation paths is %s", manifestGenerationPaths)
 
@@ -141,6 +146,7 @@ func (c *mrpService) makeChangeRevisionPatch(ctx context.Context, logCtx *log.En
 	numSources := len(sourcesRevisions)
 	patchChangeRevisions := make([]string, numSources)
 	patchGitRevisions := make([]string, numSources)
+	var sourceErrs []error
 
 	for idx, r := range sourcesRevisions {
 		sourceLogCtx := logCtx.WithFields(log.Fields{"sourceIdx": idx})
@@ -180,9 +186,15 @@ func (c *mrpService) makeChangeRevisionPatch(ctx context.Context, logCtx *log.En
 		if err != nil {
 			sourceLogCtx.Errorf("Failed to calculate revision: %v", err)
 			if isTimeout(err) {
-				// no sense to continue, return correct error
+				// the context is expired: neither the remaining sources nor the
+				// patch request can succeed
 				return nil, err
 			}
+			// Keep the git revision annotation at the revision the change
+			// revision was calculated for, otherwise the next attempt would
+			// consider this source up to date and never recalculate it.
+			patchGitRevisions[idx] = r.gitRevision
+			sourceErrs = append(sourceErrs, fmt.Errorf("source %d: %w", idx, err))
 			continue
 		}
 		sourceLogCtx.Infof("calculated change revision is '%s'", *newChangeRevision)
@@ -205,10 +217,10 @@ func (c *mrpService) makeChangeRevisionPatch(ctx context.Context, logCtx *log.En
 		patchGitRevisions[0], patchGitRevisions)
 	if err != nil {
 		logCtx.Errorf("Failed to make annotations patch: %v", err)
-		return nil, err
+		return nil, errors.Join(append(sourceErrs, err)...)
 	}
 	logCtx.Infof("patch for application: %v", result)
-	return result, nil
+	return result, errors.Join(sourceErrs...)
 }
 
 func addPatchIfNeeded(annotations map[string]string, currentAnnotations map[string]string, key string, val string) {
@@ -231,11 +243,11 @@ func (c *mrpService) makeAnnotationPatch(a *application.Application,
 
 	changeRevisionJSON, err := json.Marshal(changeRevisions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshall changeRevisions %v: %w", changeRevisions, err)
+		return nil, NewPermanentError(fmt.Errorf("failed to marshall changeRevisions %v: %w", changeRevisions, err))
 	}
 	gitRevisionJSON, err := json.Marshal(gitRevisions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshall changeRevisions %v: %w", changeRevisions, err)
+		return nil, NewPermanentError(fmt.Errorf("failed to marshall gitRevisions %v: %w", gitRevisions, err))
 	}
 
 	addPatchIfNeeded(annotations, currentAnnotations, CHANGE_REVISION_ANN, changeRevision)
@@ -258,24 +270,13 @@ func (c *mrpService) annotateApplication(ctx context.Context, logCtx *log.Entry,
 	patchBytes, err := json.Marshal(patch)
 	if err != nil {
 		logCtx.Errorf("failed to marshal patch into json: %v", err)
-		return err
+		return NewPermanentError(err)
 	}
 	app, err := c.applicationClientset.ArgoprojV1alpha1().Applications(a.Namespace).Patch(ctx, a.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 	if err != nil {
 		logCtx.Errorf("failed to annotate application: %v: %v", app, err)
 	}
 	return err
-}
-
-func isTimeout(err error) bool {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return true
-	}
-	grpcStatus, ok := status.FromError(err)
-	if ok && grpcStatus.Code() == codes.DeadlineExceeded {
-		return true
-	}
-	return false
 }
 
 func (c *mrpService) ChangeRevision(ctx context.Context, a *application.Application) error {
@@ -291,27 +292,38 @@ func (c *mrpService) ChangeRevision(ctx context.Context, a *application.Applicat
 	logCtx.Infof("ChangeRevision called")
 
 	patch, err := c.makeChangeRevisionPatch(ctx, logCtx, a)
-	if err == nil {
-		if patch == nil {
-			logCtx.Infof("no need to patch the application")
-			status = "up-to-date"
-			return nil
-		}
-		err = c.annotateApplication(ctx, logCtx, a, patch)
-		if err == nil {
+
+	if patch != nil {
+		// Some of the sources may have been calculated even if the others
+		// failed, so the patch is applied in any case and the failure is
+		// reported to the caller afterwards.
+		patchErr := c.annotateApplication(ctx, logCtx, a, patch)
+		switch {
+		case patchErr != nil:
+			logCtx.Errorf("Failed to patch application: %v", patchErr)
+			status = "patch-error"
+			return errors.Join(err, patchErr)
+		case err != nil:
+			logCtx.Errorf("Partially patched the application, some of the revisions failed to calculate: %v", err)
+			status = "partial"
+		default:
 			logCtx.Infof("Successfully patched the application")
 			status = "updated"
-		} else {
-			logCtx.Errorf("Failed to patch application: %v", err)
-			status = "patch-error"
 		}
+		return err
+	}
+
+	if err == nil {
+		logCtx.Infof("no need to patch the application")
+		status = "up-to-date"
+		return nil
+	}
+
+	logCtx.Errorf("Failed to make change revision patch: %v", err)
+	if isTimeout(err) {
+		status = "timeout"
 	} else {
-		logCtx.Errorf("Failed to make change revision patch: %v", err)
-		if isTimeout(err) {
-			status = "timeout"
-		} else {
-			status = "error"
-		}
+		status = "error"
 	}
 	return err
 }
@@ -374,7 +386,7 @@ func (c *mrpService) calculateChangeRevision(ctx context.Context, logCtx *log.En
 		return nil, fmt.Errorf("error getting change revision: %w", err)
 	}
 	if changeRevisionResult == nil {
-		return nil, errors.New("got nil change revision result, this cannot not happen")
+		return nil, NewPermanentError(errors.New("got nil change revision result, this cannot not happen"))
 	}
 	logCtx.Infof("change revision result from repo server: %s", changeRevisionResult.Revision)
 	return &changeRevisionResult.Revision, nil

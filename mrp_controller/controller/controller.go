@@ -21,42 +21,48 @@ type MRPController interface {
 	Run(ctx context.Context)
 }
 
+type ControllerOpts struct {
+	// EventTimeout is the context deadline for handling a single application.
+	EventTimeout time.Duration
+	// NumWorkers is the number of the goroutines handling the applications.
+	NumWorkers int
+	// Retry defines how an application whose handling failed is retried.
+	Retry RetryPolicy
+}
+
 type monorepoController struct {
 	appBroadcaster AppEventHandler
 	acrService     service.MRPService
-	eventTimeout   time.Duration
 	appQueue       *KeyedAppQueue
-	numWorkers     int
+	opts           ControllerOpts
 }
 
-func NewMonorepoController(appInformer cache.SharedIndexInformer, applicationClientset appclientset.Interface, db db.ArgoDB, repoClientset repoapiclient.Clientset, metricsServer *metrics.MetricsServer, eventTimeout time.Duration, numWorkers int) MRPController {
+func NewMonorepoController(appInformer cache.SharedIndexInformer, applicationClientset appclientset.Interface, db db.ArgoDB, repoClientset repoapiclient.Clientset, metricsServer *metrics.MetricsServer, opts ControllerOpts) MRPController {
 	appBroadcaster := NewAppEventHandler()
 	_, err := appInformer.AddEventHandler(appBroadcaster)
 	if err != nil {
 		log.Error(err)
 	}
-	appQueue := NewKeyedAppQueue()
+	appQueue := NewKeyedAppQueue(WithRetryPolicy(opts.Retry), WithRetryMetrics(metricsServer))
 	appQueue.SetLengthGauge(metricsServer.QueueLengthGauge())
 	return &monorepoController{
 		appBroadcaster: appBroadcaster,
 		acrService:     service.NewMRPService(applicationClientset, db, repoClientset, metricsServer),
-		eventTimeout:   eventTimeout,
 		appQueue:       appQueue,
-		numWorkers:     numWorkers,
+		opts:           opts,
 	}
 }
 
 func (c *monorepoController) Run(ctx context.Context) {
 	var logCtx log.FieldLogger = log.StandardLogger()
 
-	calculateIfPermitted := func(ctx context.Context, a appv1.Application) { //nolint:golint,unparam
+	// The error is reported to the queue, which logs it and decides whether
+	// the application is handled again.
+	calculateIfPermitted := func(ctx context.Context, a appv1.Application) error {
 		logCtx.Debugf("calculateIfPermitted called for application '%s/%s'", a.Namespace, a.Name)
-		ctx, cancel := context.WithTimeout(ctx, c.eventTimeout)
-		err := c.acrService.ChangeRevision(ctx, &a)
-		if err != nil {
-			logCtx.WithError(err).Error("failed to calculate change revision")
-		}
-		cancel()
+		ctx, cancel := context.WithTimeout(ctx, c.opts.EventTimeout)
+		defer cancel()
+		return c.acrService.ChangeRevision(ctx, &a)
 	}
 
 	enqueueFunc := func(event *appv1.ApplicationWatchEvent) error {
@@ -74,12 +80,23 @@ func (c *monorepoController) Run(ctx context.Context) {
 		return true
 	}
 
-	unsubscribe := c.appBroadcaster.Subscribe(enqueueFunc, filterFunc)
+	// No sense to retry a deleted application
+	forgetFunc := func(event *appv1.ApplicationWatchEvent) error {
+		c.appQueue.ForgetApp(AppKey(&event.Application))
+		return nil
+	}
+	deletedFilterFunc := func(event *appv1.ApplicationWatchEvent) bool {
+		return event.Type == watch.Deleted
+	}
 
-	wp := NewWorkerPool(c.appQueue, c.numWorkers, calculateIfPermitted)
+	unsubscribe := c.appBroadcaster.Subscribe(enqueueFunc, filterFunc)
+	unsubscribeDeleted := c.appBroadcaster.Subscribe(forgetFunc, deletedFilterFunc)
+
+	wp := NewWorkerPool(c.appQueue, c.opts.NumWorkers, calculateIfPermitted)
 
 	defer func() {
 		unsubscribe()
+		unsubscribeDeleted()
 		wp.Stop()
 	}()
 	<-ctx.Done()

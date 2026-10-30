@@ -122,7 +122,6 @@ the relevant ArgoCD configuration (such as configuration of Git
 repository connections, list of namespaces to handle applications,
 etc.).
 
-
 ## Future plans
 
 * Extend Argo-CD UI to display accurate [Change Revisions](terminology.md#change-revision).

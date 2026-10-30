@@ -8,7 +8,10 @@ Both Monorepo Controller and Monorepo Repo Server expose Prometheus metrics
 |--------------------------------------------------|:---------:|----------------------------------------------------------------------------|
 | `monorepo_app_info`                              | gauge     | Information about application.                                             |
 | `monorepo_app_reconcile`                         | histogram | Application reconciliation performance in seconds.                         |
-| `monorepo_app_queue_length`                      | gauge     | Length of application processing queue                                     |
+| `monorepo_app_queue_length`                      | gauge     | Number of applications waiting to be handled by a worker                   |
+| `monorepo_app_retry_queue_length`                | gauge     | Number of applications waiting for their retry delay to pass               |
+| `monorepo_app_retry_total`                       | counter   | Number of retries scheduled after a retryable failure                      |
+| `monorepo_app_retry_exhausted_total`             | counter   | Number of applications given up on after all the retries failed            |
 | `monorepo_repo_server_request_total`             | counter   | Number of repo server requests executed during application reconciliation. |
 | `monorepo_repo_server_request_duration`          | histogram | Repo server requests duration.                                             |
 | `monorepo_kubectl_requests_total`                | counter   | Number of kubectl request results",                                        |
@@ -16,7 +19,6 @@ Both Monorepo Controller and Monorepo Repo Server expose Prometheus metrics
 | `monorepo_kubectl_response_size_bytes`           | histogram | Size of kubectl responses                                                  |
 | `monorepo_kubectl_rate_limiter_duration_seconds` | histogram | Kubectl rate limiter latency                                               |
 | `monorepo_kubectl_request_duration_seconds`      | histogram | Request latency in seconds                                                 |
-
 
 
 ## ArgoCD Monorepo Repo Server Metrics
