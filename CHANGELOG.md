@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.0.9 (2026-11-30)
+## v0.0.9 (2026-10-30)
 
 ### Features
 
@@ -15,7 +15,7 @@
 - Bump golang dependencies
 - Bump golang compiler/runtime to 1.27.3
 
-## v0.0.8 (2026-11-06)
+## v0.0.8 (2026-10-06)
 
 ### Features
 
