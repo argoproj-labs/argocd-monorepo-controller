@@ -82,7 +82,7 @@ for gofile in sys.argv[2:]:
                     continue
                 argName = argMatch.group(1)
                 print("ARG", argName,  file=sys.stderr)
-                argMatch = re.search("env.(Strings?|ParseNum|ParseBool|ParseDuration)FromEnv\\(\"([A-Z0-9_]+)\"", line)
+                argMatch = re.search("env.(Strings?|ParseNum|ParseBool|ParseDuration|ParseInt64|ParseFloat64|ParseFloat)FromEnv\\(\"([A-Z0-9_]+)\"", line)
                 if not argMatch:
                     continue
                 varName = argMatch.group(2)

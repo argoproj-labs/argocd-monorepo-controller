@@ -8,6 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/argoproj/argo-cd/v3/mrp_controller/metrics"
 	appsv1 "github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
@@ -1961,6 +1963,100 @@ func Test_makeChangeRevisionPatch(t *testing.T) {
 	assert.Equal(t, "c732f4d2ef24c7eeb900e9211ff98f90bb646506", annotations[GIT_REVISION_ANN])
 }
 
+func Test_makeChangeRevisionPatchPartialFailure(t *testing.T) {
+	expectedRevision := "ffffffffffffffffffffffffffffffffffffffff"
+	repo := appsv1.Repository{Repo: "cfrepo02"}
+	app := createTestApp(t, syncedMSAppWithSingleHistory1Annotated)
+	appClientMock, _ := createTestAppInterfaceForApp(t, app)
+	clientsetmock := createTestRepoclientForMSApp(t, app, &repo,
+		changeRevisionReply{response: &repoapiclient.ChangeRevisionResponse{Revision: expectedRevision}},
+		changeRevisionReply{err: status.Error(codes.Unavailable, "connection refused")},
+	)
+	mrpService := newTestMRPService(t, clientsetmock, appClientMock, createTestArgoDbForMSApp(t, app, &repo))
+
+	patch, err := mrpService.makeChangeRevisionPatch(t.Context(), createLogCtx(app), app)
+
+	// the failure of the second source is reported, and is worth retrying
+	require.Error(t, err)
+	require.ErrorContains(t, err, "source 1")
+	assert.True(t, IsRetryable(err))
+
+	// while the revisions calculated for the first source are kept
+	annotations := getPatchAnnotations(t, patch)
+	assert.Equal(t, expectedRevision, annotations[CHANGE_REVISION_ANN])
+	assert.Equal(t, "CURRENT_REPO_02_000000000000000000000000", annotations[GIT_REVISION_ANN])
+
+	var changeRevisions []string
+	require.NoError(t, json.Unmarshal([]byte(annotations[CHANGE_REVISIONS_ANN]), &changeRevisions))
+	assert.Equal(t, []string{
+		expectedRevision,
+		"HISTORY-1_REPO02_00000000000000000000000",
+		"HISTORY-1_REPO01_00000000000000000000000",
+		"CURRENT_REPO_01_000000000000000000000000",
+	}, changeRevisions)
+
+	// the git revision of the failed source must stay at the revision its
+	// change revision was calculated for, so that it is calculated again
+	var gitRevisions []string
+	require.NoError(t, json.Unmarshal([]byte(annotations[GIT_REVISIONS_ANN]), &gitRevisions))
+	assert.Equal(t, []string{
+		"CURRENT_REPO_02_000000000000000000000000",
+		"HISTORY-1_REPO02_00000000000000000000000",
+		"CURRENT_REPO_01_000000000000000000000000",
+		"CURRENT_REPO_01_000000000000000000000000",
+	}, gitRevisions)
+}
+
+func Test_ChangeRevisionPartialFailure(t *testing.T) {
+	expectedRevision := "ffffffffffffffffffffffffffffffffffffffff"
+	repo := appsv1.Repository{Repo: "cfrepo02"}
+	app := createTestApp(t, syncedMSAppWithSingleHistory1Annotated)
+	appClientMock, appIntMock := createTestAppInterfaceForApp(t, app)
+	appIntMock.On("Patch", t.Context(), app.Name, types.MergePatchType,
+		mock.MatchedBy(func(_ any) bool { return true }),
+		metav1.PatchOptions{}).Return(app, nil).Once()
+	clientsetmock := createTestRepoclientForMSApp(t, app, &repo,
+		changeRevisionReply{response: &repoapiclient.ChangeRevisionResponse{Revision: expectedRevision}},
+		changeRevisionReply{err: status.Error(codes.Unavailable, "connection refused")},
+	)
+	mrpService := newTestMRPService(t, clientsetmock, appClientMock, createTestArgoDbForMSApp(t, app, &repo))
+
+	err := mrpService.ChangeRevision(t.Context(), app)
+
+	// what could be calculated is patched, the failure is still reported
+	require.Error(t, err)
+	assert.True(t, IsRetryable(err))
+	appIntMock.AssertExpectations(t)
+}
+
+func Test_makeChangeRevisionPatchAllSourcesFailed(t *testing.T) {
+	repo := appsv1.Repository{Repo: "cfrepo02"}
+	app := createTestApp(t, syncedMSAppWithSingleHistory1Annotated)
+	appClientMock, _ := createTestAppInterfaceForApp(t, app)
+	clientsetmock := createTestRepoclientForMSApp(t, app, &repo,
+		changeRevisionReply{err: status.Error(codes.Unavailable, "connection refused")},
+		changeRevisionReply{err: status.Error(codes.Unavailable, "connection refused")},
+	)
+	mrpService := newTestMRPService(t, clientsetmock, appClientMock, createTestArgoDbForMSApp(t, app, &repo))
+
+	patch, err := mrpService.makeChangeRevisionPatch(t.Context(), createLogCtx(app), app)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "source 0")
+	require.ErrorContains(t, err, "source 1")
+	assert.True(t, IsRetryable(err))
+
+	// None of the per-source revisions changed, so they are not part of the
+	// patch at all. Only the single source annotations, which this application
+	// does not have yet, are added, holding the revisions of the first source
+	// as they were before the failed attempt.
+	annotations := getPatchAnnotations(t, patch)
+	assert.Equal(t, map[string]string{
+		CHANGE_REVISION_ANN: "HISTORY-2_REPO02_00000000000000000000000",
+		GIT_REVISION_ANN:    "HISTORY-1_REPO02_00000000000000000000000",
+	}, annotations)
+}
+
 func newTestMetricsServer(t *testing.T, dbMock *dbmocks.ArgoDB) *metrics.MetricsServer {
 	t.Helper()
 	healthcheck := func(_ *http.Request) error { return nil }
@@ -2149,3 +2245,56 @@ func createTestArgoDbForAppAndRepo(t *testing.T, app *appsv1.Application, repo *
 // 		require.Equal(t, "Change revision already calculated for application guestbook", lastLogEntry.Message)
 // 	})
 // }
+
+// createTestAppInterfaceForApp mocks reading the application, and gives the
+// caller access to the mocked application resource interface, so that patching
+// can be mocked or asserted on.
+func createTestAppInterfaceForApp(t *testing.T, app *appsv1.Application) (*mocks.Interface, *appmocks.ApplicationInterface) {
+	t.Helper()
+	appintMock := &appmocks.ApplicationInterface{}
+	appintMock.On("Get", t.Context(), app.Name, metav1.GetOptions{}).Return(app, nil)
+
+	av1alpha1 := &appmocks.ArgoprojV1alpha1Interface{}
+	av1alpha1.On("Applications", app.Namespace).Return(appintMock)
+
+	clientsetMock := &mocks.Interface{}
+	clientsetMock.On("ArgoprojV1alpha1").Return(av1alpha1)
+	return clientsetMock, appintMock
+}
+
+type changeRevisionReply struct {
+	response *repoapiclient.ChangeRevisionResponse
+	err      error
+}
+
+// createTestRepoclientForMSApp mocks the repo server for the sources of the
+// multi-source test application whose git revision has changed. The requests
+// for those sources are identical, so the replies are consumed in the order
+// they are given.
+func createTestRepoclientForMSApp(t *testing.T, app *appsv1.Application,
+	repo *appsv1.Repository, replies ...changeRevisionReply,
+) *repomocks.Clientset {
+	t.Helper()
+	changeRevisionRequest := &repoapiclient.ChangeRevisionRequest{
+		AppName:          app.GetName(),
+		Namespace:        app.GetNamespace(),
+		CurrentRevision:  "CURRENT_REPO_02_000000000000000000000000",
+		PreviousRevision: "HISTORY-1_REPO02_00000000000000000000000",
+		Paths:            GetSourceRefreshPaths(app, app.Spec.Sources[0].Path),
+		Repo:             repo,
+	}
+	clientmock := &repomocks.RepoServerServiceClient{}
+	for _, reply := range replies {
+		clientmock.On("GetChangeRevision", t.Context(), changeRevisionRequest).
+			Return(reply.response, reply.err).Once()
+	}
+	return &repomocks.Clientset{RepoServerServiceClient: clientmock}
+}
+
+func createTestArgoDbForMSApp(t *testing.T, app *appsv1.Application, repo *appsv1.Repository) *dbmocks.ArgoDB {
+	t.Helper()
+	db := dbmocks.ArgoDB{}
+	db.On("GetRepository", t.Context(), app.Spec.Sources[0].RepoURL, app.Spec.Project).
+		Return(repo, nil)
+	return &db
+}

@@ -63,6 +63,8 @@ type MRPServerOpts struct {
 	MetricsCacheExpiration time.Duration
 	EventHandlingTimeout   int
 	NumWorkers             int
+	RetryPolicy            mrp_controller.RetryPolicy
+	AppResyncPeriod        time.Duration
 }
 
 /*type handlerSwitcher struct {
@@ -97,7 +99,12 @@ func (a *MRPServer) Init(ctx context.Context) {
 }
 
 func (a *MRPServer) RunController(ctx context.Context) {
-	controller := mrp_controller.NewMonorepoController(a.appInformer, a.applicationClientset, a.db, a.repoClientset, a.metricsServer, time.Second*time.Duration(a.EventHandlingTimeout), a.NumWorkers)
+	controllerOpts := mrp_controller.ControllerOpts{
+		EventTimeout: time.Second * time.Duration(a.EventHandlingTimeout),
+		NumWorkers:   a.NumWorkers,
+		Retry:        a.RetryPolicy,
+	}
+	controller := mrp_controller.NewMonorepoController(a.appInformer, a.applicationClientset, a.db, a.repoClientset, a.metricsServer, controllerOpts)
 	go controller.Run(ctx)
 }
 
@@ -187,7 +194,11 @@ func NewMRPServer(ctx context.Context, opts MRPServerOpts) *MRPServer {
 	if len(opts.ApplicationNamespaces) > 0 {
 		appInformerNs = ""
 	}
-	appFactory := appinformer.NewSharedInformerFactoryWithOptions(opts.AppClientset, 0, appinformer.WithNamespace(appInformerNs), appinformer.WithTweakListOptions(func(_ *metav1.ListOptions) {}))
+	// With a resync period the informer redelivers every application it has
+	// cached, which gets the applications whose handling kept failing looked
+	// at again. The queue recognizes such a redelivery and does not let it
+	// interfere with a retry which is already scheduled.
+	appFactory := appinformer.NewSharedInformerFactoryWithOptions(opts.AppClientset, opts.AppResyncPeriod, appinformer.WithNamespace(appInformerNs), appinformer.WithTweakListOptions(func(_ *metav1.ListOptions) {}))
 
 	appInformer := appFactory.Argoproj().V1alpha1().Applications().Informer()
 	appLister := appFactory.Argoproj().V1alpha1().Applications().Lister()

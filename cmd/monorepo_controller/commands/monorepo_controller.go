@@ -7,6 +7,7 @@ import (
 	"time"
 
 	mrp "github.com/argoproj/argo-cd/v3/mrp_controller"
+	mrpcontroller "github.com/argoproj/argo-cd/v3/mrp_controller/controller"
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/redis/go-redis/v9"
@@ -31,6 +32,9 @@ var (
 	failureRetryPeriodMilliSeconds = 100
 )
 
+// minAppResyncPeriod is the shortest resync period accepted.
+const minAppResyncPeriod = time.Minute
+
 // func init() {
 // 	failureRetryCount = env.ParseNumFromEnv(failureRetryCountEnv, failureRetryCount, 0, 10)
 // 	failureRetryPeriodMilliSeconds = env.ParseNumFromEnv(failureRetryPeriodMilliSecondsEnv, failureRetryPeriodMilliSeconds, 0, 1000)
@@ -54,6 +58,8 @@ func NewCommand() *cobra.Command {
 		metricsCacheExpiration      time.Duration
 		eventHandlingTimeoutSeconds int
 		controllerWorkers           int
+		retryPolicy                 mrpcontroller.RetryPolicy
+		appResyncPeriod             time.Duration
 		// argocdToken              string
 		// rootpath                 string
 	)
@@ -80,6 +86,11 @@ func NewCommand() *cobra.Command {
 			cli.SetLogFormat(cmdutil.LogFormat)
 			cli.SetLogLevel(cmdutil.LogLevel)
 			cli.SetGLogLevel(glogLevel)
+
+			errors.CheckError(retryPolicy.Validate())
+			if appResyncPeriod != 0 && appResyncPeriod < minAppResyncPeriod {
+				log.Fatalf("invalid application resync period %v: must be 0 to disable the resync, or at least %v", appResyncPeriod, minAppResyncPeriod)
+			}
 
 			config, err := clientConfig.ClientConfig()
 			errors.CheckError(err)
@@ -121,6 +132,8 @@ func NewCommand() *cobra.Command {
 				MetricsCacheExpiration: metricsCacheExpiration,
 				EventHandlingTimeout:   eventHandlingTimeoutSeconds,
 				NumWorkers:             controllerWorkers,
+				RetryPolicy:            retryPolicy,
+				AppResyncPeriod:        appResyncPeriod,
 			}
 
 			log.Debug("Starting Monorepo Controller server")
@@ -155,6 +168,12 @@ func NewCommand() *cobra.Command {
 	command.Flags().DurationVar(&metricsCacheExpiration, "metrics-cache-expiration", env.ParseDurationFromEnv("MONOREPO_CONTROLLER_METRICS_CACHE_EXPIRATION", 0*time.Second, 0, math.MaxInt64), "Prometheus metrics cache expiration (disabled  by default. e.g. 24h0m0s)")
 	command.Flags().IntVar(&eventHandlingTimeoutSeconds, "event-handling-timeout-seconds", env.ParseNumFromEnv("MONOREPO_CONTROLLER_EVENT_HANDLING_TIMEOUT_SECONDS", 120, 0, math.MaxInt64), "Context deadline for processing a single application event")
 	command.Flags().IntVar(&controllerWorkers, "controller-workers", env.ParseNumFromEnv("MONOREPO_CONTROLLER_WORKERS", common.DefaultMonorepoControllerWorkers, 1, math.MaxInt32), "Number of worker goroutines processing application change-revision events")
+	command.Flags().DurationVar(&appResyncPeriod, "app-resync-period", env.ParseDurationFromEnv("MONOREPO_CONTROLLER_APP_RESYNC_PERIOD", 0, 0, math.MaxInt64), "Interval at which every application is handled in absence of events. Disabled when it is 0s (e.g. 1h)")
+	command.Flags().IntVar(&retryPolicy.MaxAttempts, "retry-max-attempts", env.ParseNumFromEnv("MONOREPO_CONTROLLER_RETRY_MAX_ATTEMPTS", mrpcontroller.DefaultRetryMaxAttempts, 0, math.MaxInt32), "Number of times handling of an application is retried after a transient failure. Retries are disabled when it is 0")
+	command.Flags().DurationVar(&retryPolicy.BaseDelay, "retry-base-delay", env.ParseDurationFromEnv("MONOREPO_CONTROLLER_RETRY_BASE_DELAY", mrpcontroller.DefaultRetryBaseDelay, time.Millisecond, math.MaxInt64), "Delay before the first retry of a failed application (e.g. 10s)")
+	command.Flags().DurationVar(&retryPolicy.MaxDelay, "retry-max-delay", env.ParseDurationFromEnv("MONOREPO_CONTROLLER_RETRY_MAX_DELAY", mrpcontroller.DefaultRetryMaxDelay, 0, math.MaxInt64), "Upper bound of the delay between the retries of a failed application. The delay is not capped when it is 0 (e.g. 5m)")
+	command.Flags().Float64Var(&retryPolicy.Factor, "retry-backoff-factor", env.ParseFloat64FromEnv("MONOREPO_CONTROLLER_RETRY_BACKOFF_FACTOR", mrpcontroller.DefaultRetryBackoffFactor, 1, math.MaxFloat64), "Multiplier applied to the retry delay after every attempt")
+	command.Flags().Float64Var(&retryPolicy.Jitter, "retry-jitter", env.ParseFloat64FromEnv("MONOREPO_CONTROLLER_RETRY_JITTER", mrpcontroller.DefaultRetryJitter, 0, 1), "Fraction by which the retry delay is randomized, so that the applications which failed together are not all retried at once")
 
 	// cacheSrc = servercache.AddCacheFlagsToCmd(command, cacheutil.Options{
 	// 	OnClientCreated: func(client *redis.Client) {
