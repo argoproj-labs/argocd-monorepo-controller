@@ -5,9 +5,13 @@
 ### Features
 
 - Enable parallelism when handling applications update
+- Implement support for partial errors when only some of the sources failed
+- Implement retry of failed application updates
+- Implement periodic resync of applications
 
 ### Other
 
+- Ubuntu base image updates
 - Bump golang dependencies
 - Bump golang compiler/runtime to 1.27.3
 

@@ -1,6 +1,6 @@
 # argocd-monorepo-controller
 
-![Version: v0.0.9-rc1](https://img.shields.io/badge/Version-v0.0.9--rc1-informational?style=flat-square) ![AppVersion: v0.0.9-rc1](https://img.shields.io/badge/AppVersion-v0.0.9--rc1-informational?style=flat-square)
+![Version: v0.0.9](https://img.shields.io/badge/Version-v0.0.9-informational?style=flat-square) ![AppVersion: v0.0.9](https://img.shields.io/badge/AppVersion-v0.0.9-informational?style=flat-square)
 
 A Helm chart for Argocd Monorepo Controller, an ArgoCD addon that accurately tracks last commits that actually changed the application
 

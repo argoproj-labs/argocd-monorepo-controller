@@ -260,7 +260,7 @@ spec:
               key: controller.retry.jitter
               name: argocd-monorepo-cmd-params-cm
               optional: true
-        image: quay.io/argoprojlabs/argocd-monorepo-controller:latest
+        image: quay.io/argoprojlabs/argocd-monorepo-controller:v0.0.9
         imagePullPolicy: Always
         name: argocd-monorepo-controller
         ports:
@@ -575,7 +575,7 @@ spec:
           value: /helm-working-dir
         - name: HELM_DATA_HOME
           value: /helm-working-dir
-        image: quay.io/argoprojlabs/argocd-monorepo-controller:latest
+        image: quay.io/argoprojlabs/argocd-monorepo-controller:v0.0.9
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
