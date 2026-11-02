@@ -10,7 +10,7 @@ require (
 	github.com/argoproj/argo-cd/gitops-engine/v3 v3.6.0-rc4
 	github.com/argoproj/pkg v0.13.6
 	github.com/argoproj/pkg/v2 v2.0.1
-	github.com/bmatcuk/doublestar/v4 v4.10.3
+	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bombsimon/logrusr/v4 v4.2.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.19.0
 	github.com/casbin/casbin/v2 v2.135.0
