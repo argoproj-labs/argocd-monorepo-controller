@@ -8,21 +8,21 @@ metadata:
   {{- end }}
 {{- end }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
 {{- with .Values.repoServer.service.labels }}
 {{- toYaml . | nindent 4 }}
 {{- end }}
   name: "argocd-monorepo-repo-server"
-  namespace: {{ include  "argo-cd.namespace" . }}
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
 spec:
-  {{- include "argo-cd.dualStack" . | indent 2 }}
+  {{- include "argocd-monorepo-controller.dualStack" . | indent 2 }}
   ports:
   - name: {{ .Values.repoServer.service.portName }}
     protocol: TCP
     port: {{ .Values.repoServer.service.port }}
     targetPort: repo-server
   selector:
-    {{- include "argo-cd.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 4 }}
   {{- if .Values.repoServer.service.trafficDistribution }}
   trafficDistribution: {{ .Values.repoServer.service.trafficDistribution }}
   {{- end }}
