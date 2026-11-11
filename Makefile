@@ -193,6 +193,8 @@ else
 IMAGE_TAG?=latest
 endif
 
+BUILDVCS_FLAG=-buildvcs=false
+
 ifeq (${DOCKER_PUSH},true)
 ifndef IMAGE_NAMESPACE
 $(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=argoproj))
@@ -326,7 +328,7 @@ manifests: test-tools-image
 # consolidated binary for cli, util, server, repo-server, controller
 .PHONY: argocd-all
 argocd-all: clean-debug
-	CGO_ENABLED=${CGO_FLAG} GOOS=${GOOS} GOARCH=${GOARCH} GODEBUG="tarinsecurepath=0,zipinsecurepath=0" go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${BIN_NAME} ./cmd
+	CGO_ENABLED=${CGO_FLAG} GOOS=${GOOS} GOARCH=${GOARCH} GODEBUG="tarinsecurepath=0,zipinsecurepath=0" go build -v ${BUILDVCS_FLAG} -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${BIN_NAME} ./cmd
 
 .PHONY: server
 server: clean-debug
