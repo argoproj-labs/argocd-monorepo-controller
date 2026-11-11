@@ -2,10 +2,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: {{ template "argo-cd.controller.fullname" . }}
-  namespace: {{ default (include  "argo-cd.namespace" .) .Values.controller.metrics.rules.namespace | quote }}
+  name: {{ template "argocd-monorepo-controller.controller.fullname" . }}
+  namespace: {{ default (include  "argocd-monorepo-controller.namespace" .) .Values.controller.metrics.rules.namespace | quote }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 4 }}
     {{- if .Values.controller.metrics.rules.selector }}
 {{- toYaml .Values.controller.metrics.rules.selector | nindent 4 }}
     {{- end }}

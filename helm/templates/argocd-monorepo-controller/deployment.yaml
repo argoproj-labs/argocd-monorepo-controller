@@ -7,16 +7,16 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
-  name: {{ template "argo-cd.controller.fullname" . }}
-  namespace: {{ include  "argo-cd.namespace" . }}
+  name: {{ template "argocd-monorepo-controller.controller.fullname" . }}
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 4 }}
 spec:
   replicas: {{ default 1 .Values.controller.replicas }}
   revisionHistoryLimit: {{ .Values.controller.revisionHistoryLimit | default .Values.global.revisionHistoryLimit }}
   selector:
     matchLabels:
-      {{- include "argo-cd.selectorLabels" (dict "context" . "name" .Values.controller.name) | nindent 6 }}
+      {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" . "name" .Values.controller.name) | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -26,7 +26,7 @@ spec:
         {{- end }}
         {{- end }}
       labels:
-        {{- include "argo-cd.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 8 }}
+        {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 8 }}
     spec:
       {{- with .Values.controller.runtimeClassName | default .Values.global.runtimeClassName }}
       runtimeClassName: {{ . }}
@@ -49,7 +49,7 @@ spec:
       {{- if .Values.controller.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ .Values.controller.terminationGracePeriodSeconds }}
       {{- end }}
-      serviceAccountName: {{ include "argo-cd.controller.serviceAccountName" . }}
+      serviceAccountName: {{ include "argocd-monorepo-controller.controller.serviceAccountName" . }}
       automountServiceAccountToken: {{ default true .Values.controller.automountServiceAccountToken }}
       containers:
       - args:
@@ -57,7 +57,7 @@ spec:
         {{- with .Values.controller.extraArgs }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
-        image: {{ default .Values.global.image.repository .Values.controller.image.repository }}:{{ default (include "argo-cd.defaultTag" .) .Values.controller.image.tag }}
+        image: {{ default .Values.global.image.repository .Values.controller.image.repository }}:{{ default (include "argocd-monorepo-controller.defaultTag" .) .Values.controller.image.tag }}
         imagePullPolicy: {{ default .Values.global.image.imagePullPolicy .Values.controller.image.imagePullPolicy }}
         name: {{ .Values.controller.name }}
         env:
@@ -223,7 +223,7 @@ spec:
       initContainers:
         {{- tpl (toYaml .) $ | nindent 6 }}
       {{- end }}
-      {{- with include "argo-cd.affinity" (dict "context" . "component" .Values.controller) }}
+      {{- with include "argocd-monorepo-controller.affinity" (dict "context" . "component" .Values.controller) }}
       affinity:
         {{- trim . | nindent 8 }}
       {{- end }}

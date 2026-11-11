@@ -7,15 +7,15 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
-  name: {{ template "argo-cd.repoServer.fullname" . }}
-  namespace: {{ include  "argo-cd.namespace" . }}
+  name: {{ template "argocd-monorepo-controller.repoServer.fullname" . }}
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
     {{- with (mergeOverwrite (deepCopy .Values.global.deploymentLabels) .Values.repoServer.deploymentLabels) }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  {{- with include "argo-cd.strategy" (mergeOverwrite (deepCopy .Values.global.deploymentStrategy) .Values.repoServer.deploymentStrategy) }}
+  {{- with include "argocd-monorepo-controller.strategy" (mergeOverwrite (deepCopy .Values.global.deploymentStrategy) .Values.repoServer.deploymentStrategy) }}
   strategy:
     {{- trim . | nindent 4 }}
   {{- end }}
@@ -25,7 +25,7 @@ spec:
   revisionHistoryLimit: {{ .Values.global.revisionHistoryLimit }}
   selector:
     matchLabels:
-      {{- include "argo-cd.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 6 }}
+      {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -35,7 +35,7 @@ spec:
         {{- end }}
         {{- end }}
       labels:
-        {{- include "argo-cd.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 8 }}
+        {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 8 }}
         {{- with (mergeOverwrite (deepCopy .Values.global.podLabels) .Values.repoServer.podLabels) }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -61,11 +61,11 @@ spec:
       {{- if .Values.repoServer.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ .Values.repoServer.terminationGracePeriodSeconds }}
       {{- end }}
-      serviceAccountName: {{ include "argo-cd.repoServer.serviceAccountName" . }}
+      serviceAccountName: {{ include "argocd-monorepo-controller.repoServer.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.repoServer.automountServiceAccountToken }}
       containers:
       - name: {{ .Values.repoServer.name }}
-        image: {{ default .Values.global.image.repository .Values.repoServer.image.repository }}:{{ default (include "argo-cd.defaultTag" .) .Values.repoServer.image.tag }}
+        image: {{ default .Values.global.image.repository .Values.repoServer.image.repository }}:{{ default (include "argocd-monorepo-controller.defaultTag" .) .Values.repoServer.image.tag }}
         imagePullPolicy: {{ default .Values.global.image.imagePullPolicy .Values.repoServer.image.imagePullPolicy }}
         args:
         - /usr/local/bin/argocd-monorepo-repo-server
@@ -173,11 +173,11 @@ spec:
           - name: REDIS_USERNAME
             valueFrom:
               secretKeyRef:
-                {{- include "argo-cd.redisUsernameSecretRef" . | nindent 16 }}
+                {{- include "argocd-monorepo-controller.redisUsernameSecretRef" . | nindent 16 }}
           - name: REDIS_PASSWORD
             valueFrom:
               secretKeyRef:
-                {{- include "argo-cd.redisPasswordSecretRef" . | nindent 16 }}
+                {{- include "argocd-monorepo-controller.redisPasswordSecretRef" . | nindent 16 }}
           - name: REDIS_SENTINEL_USERNAME
             valueFrom:
               secretKeyRef:
@@ -376,7 +376,7 @@ spec:
         - --update=none
         - /usr/local/bin/argocd
         - /var/run/argocd/argocd-cmp-server
-        image: {{ default .Values.global.image.repository .Values.repoServer.image.repository }}:{{ default (include "argo-cd.defaultTag" .) .Values.repoServer.image.tag }}
+        image: {{ default .Values.global.image.repository .Values.repoServer.image.repository }}:{{ default (include "argocd-monorepo-controller.defaultTag" .) .Values.repoServer.image.tag }}
         imagePullPolicy: {{ default .Values.global.image.imagePullPolicy .Values.repoServer.image.imagePullPolicy }}
         name: copyutil
         resources:
@@ -391,7 +391,7 @@ spec:
       {{- with .Values.repoServer.initContainers }}
         {{- tpl (toYaml .) $ | nindent 6 }}
       {{- end }}
-      {{- with include "argo-cd.affinity" (dict "context" . "component" .Values.repoServer) }}
+      {{- with include "argocd-monorepo-controller.affinity" (dict "context" . "component" .Values.repoServer) }}
       affinity:
         {{- trim . | nindent 8 }}
       {{- end }}
@@ -410,7 +410,7 @@ spec:
         {{- if not $constraint.labelSelector }}
         labelSelector:
           matchLabels:
-            {{- include "argo-cd.selectorLabels" (dict "context" $ "name" $.Values.repoServer.name) | nindent 12 }}
+            {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" $ "name" $.Values.repoServer.name) | nindent 12 }}
         {{- end }}
         {{- end }}
       {{- end }}
