@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
-	github.com/Masterminds/semver/v3 v3.4.0
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/alicebob/miniredis/v2 v2.40.0
 	github.com/argoproj/argo-cd/gitops-engine/v3 v3.6.0-rc4
 	github.com/argoproj/pkg v0.13.6
