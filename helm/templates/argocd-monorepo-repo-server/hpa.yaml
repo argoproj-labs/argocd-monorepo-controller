@@ -2,15 +2,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "argo-cd.repoServer.fullname" . }}
-  namespace: {{ include  "argo-cd.namespace" . }}
+  name: {{ include "argocd-monorepo-controller.repoServer.fullname" . }}
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "argo-cd.repoServer.fullname" . }}
+    name: {{ include "argocd-monorepo-controller.repoServer.fullname" . }}
   minReplicas: {{ .Values.repoServer.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.repoServer.autoscaling.maxReplicas }}
   metrics:

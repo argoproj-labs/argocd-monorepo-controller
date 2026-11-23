@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "argo-cd.repoServer.fullname" . }}-metrics
-  namespace: {{ include  "argo-cd.namespace" . }}
+  name: {{ include "argocd-monorepo-controller.repoServer.fullname" . }}-metrics
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.repoServer.name "name" (printf "%s-metrics" .Values.repoServer.name)) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.repoServer.name "name" (printf "%s-metrics" .Values.repoServer.name)) | nindent 4 }}
     {{- with .Values.repoServer.metrics.service.labels }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -24,12 +24,12 @@ spec:
   {{- if and .Values.repoServer.metrics.service.clusterIP (eq .Values.repoServer.metrics.service.type "ClusterIP") }}
   clusterIP: {{ .Values.repoServer.metrics.service.clusterIP }}
   {{- end }}
-  {{- include "argo-cd.dualStack" . | indent 2 }}
+  {{- include "argocd-monorepo-controller.dualStack" . | indent 2 }}
   ports:
   - name: {{ .Values.repoServer.metrics.service.portName }}
     protocol: TCP
     port: {{ .Values.repoServer.metrics.service.servicePort }}
     targetPort: metrics
   selector:
-    {{- include "argo-cd.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 4 }}
 {{- end }}

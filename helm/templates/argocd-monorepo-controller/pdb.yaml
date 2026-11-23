@@ -2,10 +2,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "argo-cd.controller.fullname" . }}
-  namespace: {{ include  "argo-cd.namespace" . }}
+  name: {{ include "argocd-monorepo-controller.controller.fullname" . }}
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.controller.name "name" .Values.controller.name) | nindent 4 }}
     {{- with .Values.controller.pdb.labels }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -23,5 +23,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "argo-cd.selectorLabels" (dict "context" . "name" .Values.controller.name) | nindent 6 }}
+      {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" . "name" .Values.controller.name) | nindent 6 }}
 {{- end }}

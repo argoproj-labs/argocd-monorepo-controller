@@ -4,16 +4,16 @@ Create controller name and version as used by the chart label.
 Truncated at 52 chars because StatefulSet label 'controller-revision-hash' is limited
 to 63 chars and it includes 10 chars of hash and a separating '-'.
 */}}
-{{- define "argo-cd.controller.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.controller.name | trunc 52 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.controller.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.controller.name | trunc 52 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create the name of the controller service account to use
 */}}
-{{- define "argo-cd.controller.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.controller.serviceAccountName" -}}
 {{- if .Values.controller.serviceAccount.create -}}
-    {{ default (include "argo-cd.controller.fullname" .) .Values.controller.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.controller.fullname" .) .Values.controller.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.controller.serviceAccount.name }}
 {{- end -}}
@@ -22,17 +22,17 @@ Create the name of the controller service account to use
 {{/*
 Create dex name and version as used by the chart label.
 */}}
-{{- define "argo-cd.dex.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.dex.name | trunc 63 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.dex.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.dex.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create Dex server endpoint
 */}}
-{{- define "argo-cd.dex.server" -}}
+{{- define "argocd-monorepo-controller.dex.server" -}}
 {{- $insecure := index .Values.configs.params "dexserver.disable.tls" | toString -}}
 {{- $scheme := (eq $insecure "true") | ternary "http" "https" -}}
-{{- $host := include "argo-cd.dex.fullname" . -}}
+{{- $host := include "argocd-monorepo-controller.dex.fullname" . -}}
 {{- $port := int .Values.dex.servicePortHttp -}}
 {{- printf "%s://%s:%d" $scheme $host $port }}
 {{- end }}
@@ -40,9 +40,9 @@ Create Dex server endpoint
 {{/*
 Create the name of the dex service account to use
 */}}
-{{- define "argo-cd.dex.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.dex.serviceAccountName" -}}
 {{- if .Values.dex.serviceAccount.create -}}
-    {{ default (include "argo-cd.dex.fullname" .) .Values.dex.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.dex.fullname" .) .Values.dex.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.dex.serviceAccount.name }}
 {{- end -}}
@@ -51,7 +51,7 @@ Create the name of the dex service account to use
 {{/*
 Create redis name and version as used by the chart label.
 */}}
-{{- define "argo-cd.redis.fullname" -}}
+{{- define "argocd-monorepo-controller.redis.fullname" -}}
 {{- $redisHa := (index .Values "redis-ha") -}}
 {{- $redisHaContext := dict "Chart" (dict "Name" "redis-ha") "Release" .Release "Values" $redisHa -}}
 {{- if $redisHa.enabled -}}
@@ -59,17 +59,17 @@ Create redis name and version as used by the chart label.
         {{- printf "%s-haproxy" (include "redis-ha.fullname" $redisHaContext) | trunc 63 | trimSuffix "-" -}}
     {{- end -}}
 {{- else -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.redis.name | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.redis.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Return Redis server endpoint
 */}}
-{{- define "argo-cd.redis.server" -}}
+{{- define "argocd-monorepo-controller.redis.server" -}}
 {{- $redisHa := (index .Values "redis-ha") -}}
 {{- if or (and .Values.redis.enabled (not $redisHa.enabled)) (and $redisHa.enabled $redisHa.haproxy.enabled) }}
-    {{- printf "%s:%s" (include "argo-cd.redis.fullname" .)  (toString .Values.redis.servicePort) }}
+    {{- printf "%s:%s" (include "argocd-monorepo-controller.redis.fullname" .)  (toString .Values.redis.servicePort) }}
 {{- else if and .Values.externalRedis.host .Values.externalRedis.port }}
     {{- printf "%s:%s" .Values.externalRedis.host (toString .Values.externalRedis.port) }}
 {{- end }}
@@ -78,9 +78,9 @@ Return Redis server endpoint
 {{/*
 Create the name of the redis service account to use
 */}}
-{{- define "argo-cd.redis.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.redis.serviceAccountName" -}}
 {{- if .Values.redis.serviceAccount.create -}}
-    {{ default (include "argo-cd.redis.fullname" .) .Values.redis.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.redis.fullname" .) .Values.redis.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.redis.serviceAccount.name }}
 {{- end -}}
@@ -90,16 +90,16 @@ Create the name of the redis service account to use
 {{/*
 Create Redis secret-init name
 */}}
-{{- define "argo-cd.redisSecretInit.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.redisSecretInit.name | trunc 63 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.redisSecretInit.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.redisSecretInit.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create the name of the Redis secret-init service account to use
 */}}
-{{- define "argo-cd.redisSecretInit.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.redisSecretInit.serviceAccountName" -}}
 {{- if .Values.redisSecretInit.serviceAccount.create -}}
-    {{ default (include "argo-cd.redisSecretInit.fullname" .) .Values.redisSecretInit.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.redisSecretInit.fullname" .) .Values.redisSecretInit.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.redisSecretInit.serviceAccount.name }}
 {{- end -}}
@@ -108,16 +108,16 @@ Create the name of the Redis secret-init service account to use
 {{/*
 Create argocd server name and version as used by the chart label.
 */}}
-{{- define "argo-cd.server.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.server.name | trunc 63 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.server.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.server.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create the name of the Argo CD server service account to use
 */}}
-{{- define "argo-cd.server.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.server.serviceAccountName" -}}
 {{- if .Values.server.serviceAccount.create -}}
-    {{ default (include "argo-cd.server.fullname" .) .Values.server.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.server.fullname" .) .Values.server.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.server.serviceAccount.name }}
 {{- end -}}
@@ -126,16 +126,16 @@ Create the name of the Argo CD server service account to use
 {{/*
 Create argocd repo-server name and version as used by the chart label.
 */}}
-{{- define "argo-cd.repoServer.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.repoServer.name | trunc 63 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.repoServer.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.repoServer.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create the name of the repo-server service account to use
 */}}
-{{- define "argo-cd.repoServer.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.repoServer.serviceAccountName" -}}
 {{- if .Values.repoServer.serviceAccount.create -}}
-    {{ default (include "argo-cd.repoServer.fullname" .) .Values.repoServer.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.repoServer.fullname" .) .Values.repoServer.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.repoServer.serviceAccount.name }}
 {{- end -}}
@@ -144,16 +144,16 @@ Create the name of the repo-server service account to use
 {{/*
 Create argocd application set name and version as used by the chart label.
 */}}
-{{- define "argo-cd.applicationSet.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.applicationSet.name | trunc 63 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.applicationSet.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.applicationSet.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Create the name of the application set service account to use
 */}}
-{{- define "argo-cd.applicationSet.serviceAccountName" -}}
+{{- define "argocd-monorepo-controller.applicationSet.serviceAccountName" -}}
 {{- if .Values.applicationSet.serviceAccount.create -}}
-    {{ default (include "argo-cd.applicationSet.fullname" .) .Values.applicationSet.serviceAccount.name }}
+    {{ default (include "argocd-monorepo-controller.applicationSet.fullname" .) .Values.applicationSet.serviceAccount.name }}
 {{- else -}}
     {{ default "default" .Values.applicationSet.serviceAccount.name }}
 {{- end -}}
@@ -162,15 +162,15 @@ Create the name of the application set service account to use
 {{/*
 Create argocd notifications name and version as used by the chart label.
 */}}
-{{- define "argo-cd.notifications.fullname" -}}
-{{- printf "%s-%s" (include "argo-cd.fullname" .) .Values.notifications.name | trunc 63 | trimSuffix "-" -}}
+{{- define "argocd-monorepo-controller.notifications.fullname" -}}
+{{- printf "%s-%s" (include "argocd-monorepo-controller.fullname" .) .Values.notifications.name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Argo Params Default Configuration Presets
 NOTE: Configuration keys must be stored as dict because YAML treats dot as separator
 */}}
-{{- define "argo-cd.config.params.presets" -}}
+{{- define "argocd-monorepo-controller.config.params.presets" -}}
 {{- $presets := dict -}}
 {{- range $component := tuple "controller" "reposerver" -}}
 {{- $_ := set $presets (printf "%s.log.format" $component) $.Values.global.logging.format -}}
@@ -182,9 +182,9 @@ NOTE: Configuration keys must be stored as dict because YAML treats dot as separ
 {{/*
 Merge Argo Params Configuration with Preset Configuration
 */}}
-{{- define "argo-cd.config.params" -}}
+{{- define "argocd-monorepo-controller.config.params" -}}
 {{- $config := omit .Values.configs.params "create" "annotations" }}
-{{- $preset := include "argo-cd.config.params.presets" . | fromYaml | default dict -}}
+{{- $preset := include "argocd-monorepo-controller.config.params.presets" . | fromYaml | default dict -}}
 {{- range $key, $value := mergeOverwrite $preset $config }}
 {{ $key }}: {{ toString $value | toYaml }}
 {{- end }}
@@ -194,14 +194,14 @@ Merge Argo Params Configuration with Preset Configuration
 Expand the namespace of the release.
 Allows overriding it for multi-namespace deployments in combined charts.
 */}}
-{{- define "argo-cd.namespace" -}}
+{{- define "argocd-monorepo-controller.namespace" -}}
 {{- default .Release.Namespace .Values.namespaceOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*
 Dual stack definition
 */}}
-{{- define "argo-cd.dualStack" -}}
+{{- define "argocd-monorepo-controller.dualStack" -}}
 {{- with .Values.global.dualStack.ipFamilyPolicy }}
 ipFamilyPolicy: {{ . }}
 {{- end }}
@@ -213,7 +213,7 @@ ipFamilies: {{ toYaml . | nindent 4 }}
 {{/*
 secretKeyRef of env variable REDIS_USERNAME
 */}}
-{{- define "argo-cd.redisUsernameSecretRef" -}}
+{{- define "argocd-monorepo-controller.redisUsernameSecretRef" -}}
     {{- if .Values.externalRedis.host -}}
 name: {{ default "argocd-redis" .Values.externalRedis.existingSecret }}
 key: redis-username
@@ -229,7 +229,7 @@ optional: true
 {{/*
 secretKeyRef of env variable REDIS_PASSWORD
 */}}
-{{- define "argo-cd.redisPasswordSecretRef" -}}
+{{- define "argocd-monorepo-controller.redisPasswordSecretRef" -}}
     {{- if .Values.externalRedis.host -}}
     {{- /* External Redis use case */ -}}
     {{- /* Secret is required when specifying existingSecret or a password, otherwise it is optional */ -}}

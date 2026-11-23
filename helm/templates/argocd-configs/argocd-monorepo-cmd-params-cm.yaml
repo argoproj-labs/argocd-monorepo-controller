@@ -3,9 +3,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: argocd-monorepo-cmd-params-cm
-  namespace: {{ include  "argo-cd.namespace" . }}
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.server.name "name" "monorepo-cmd-params-cm") | nindent 4 }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.server.name "name" "monorepo-cmd-params-cm") | nindent 4 }}
   {{- if .Values.configs.params.annotations }}
   annotations:
   {{- range $key, $value := .Values.configs.params.annotations }}
@@ -13,5 +13,5 @@ metadata:
   {{- end }}
   {{- end }}
 data:
-  {{- include "argo-cd.config.params" . | trim | nindent 2 }}
+  {{- include "argocd-monorepo-controller.config.params" . | trim | nindent 2 }}
 {{- end }}

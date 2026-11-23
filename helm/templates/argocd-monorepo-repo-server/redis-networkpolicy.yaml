@@ -3,15 +3,15 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   labels:
-    {{- include "argo-cd.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
-  name: {{ template "argo-cd.repoServer.fullname" . }}-redis
-  namespace: {{ include  "argo-cd.namespace" . }}
+    {{- include "argocd-monorepo-controller.labels" (dict "context" . "component" .Values.repoServer.name "name" .Values.repoServer.name) | nindent 4 }}
+  name: {{ template "argocd-monorepo-controller.repoServer.fullname" . }}-redis
+  namespace: {{ include  "argocd-monorepo-controller.namespace" . }}
 spec:
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          {{- include "argo-cd.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 10 }}
+          {{- include "argocd-monorepo-controller.selectorLabels" (dict "context" . "name" .Values.repoServer.name) | nindent 10 }}
     ports:
     - port: redis
       protocol: TCP
@@ -19,7 +19,7 @@ spec:
       protocol: TCP
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "argo-cd.name" .  }}-{{ .Values.redis.name }}
+      app.kubernetes.io/name: {{ include "argocd-monorepo-controller.name" .  }}-{{ .Values.redis.name }}
   policyTypes:
   - Ingress
 {{- end }}
